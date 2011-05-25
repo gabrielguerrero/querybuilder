@@ -1,0 +1,70 @@
+8
+
+dir
+10
+file:///c:/SVN_REPO/QueryBuilder/trunk
+file:///c:/SVN_REPO
+
+
+
+2007-08-06T16:59:30.234375Z
+10
+Gabriel Guerrero
+
+
+svn:special svn:externals svn:needs-lock
+
+
+
+
+
+
+
+
+
+
+
+4b5bb8a8-3708-2042-85ce-d95bec09c60f
+
+.classpath
+file
+
+
+
+
+2007-08-06T17:01:01.765625Z
+53b82c8d46c77fa6b028063c15bebc43
+2007-08-06T16:58:37.546875Z
+7
+Gabriel Guerrero
+
+.project
+file
+
+
+
+
+2007-08-06T17:01:01.828125Z
+cbc338beed7830ca4208fb46d7460386
+2007-08-06T16:58:49.062500Z
+8
+Gabriel Guerrero
+
+src
+dir
+
+pom.xml
+file
+
+
+
+
+2007-08-06T17:01:01.875000Z
+55c960c59bd65c9020ab7bbeb8e9d5ea
+2007-08-06T16:59:10.421875Z
+9
+Gabriel Guerrero
+
+.settings
+dir
+

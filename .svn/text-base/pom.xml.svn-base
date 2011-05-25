@@ -1,0 +1,69 @@
+<?xml version="1.0"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>com.g2software</groupId>
+  <artifactId>util</artifactId>
+  <name>util</name>
+  <version>1.0-SNAPSHOT</version>
+  <url>http://maven.apache.org</url>
+  
+  <repositories>
+    <repository>
+     <id>central</id>
+     <name>Maven Repository</name>
+     <url>http://repo1.maven.org/maven2</url>
+    </repository>
+    <repository>
+     <id>Ibiblio</id>
+     <name>Ibiblio</name>
+     <url>http://www.ibiblio.org/maven2</url>
+    </repository>
+    <repository>
+     <id>codehaus</id>
+     <name>Codehaus</name>
+     <url>http://repository.codehaus.org</url>
+    </repository>
+    <repository>
+     <id>codehausSnapshots</id>
+     <name>Codehaus Snapshots</name>
+     <url>http://snapshots.maven.codehaus.org/maven2</url>
+    </repository>
+    <repository>
+     <id>Ibiblio2</id>
+     <name>Ibiblio2</name>
+     <url>http://mirrors.ibiblio.org/pub/mirrors/maven2</url>
+    </repository>
+    <repository>
+     <id>openqa</id>
+     <name>openqa</name>
+     <url>http://maven.openqa.org</url>
+    </repository>
+   </repositories>
+   
+  <dependencies>
+    <dependency>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
+      <version>3.8.1</version>
+      <scope>test</scope>
+    </dependency>
+    
+    <dependency>
+      <groupId>org.hibernate</groupId>
+      <artifactId>hibernate</artifactId>
+      <version>3.2.4.sp1</version>
+    </dependency>
+    <dependency>
+     <groupId>log4j</groupId>
+     <artifactId>log4j</artifactId>
+     <version>1.2.8</version>
+    </dependency>
+    <dependency>
+     <groupId>commons-lang</groupId>
+     <artifactId>commons-lang</artifactId>
+     <version>2.1</version>
+    </dependency>
+  </dependencies>
+  
+</project>
