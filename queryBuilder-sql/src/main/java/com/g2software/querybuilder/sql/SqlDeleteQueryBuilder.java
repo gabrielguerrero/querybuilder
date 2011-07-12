@@ -33,14 +33,14 @@ public class SqlDeleteQueryBuilder extends DeleteQueryBuilder<SqlDeleteQueryBuil
 	
 	@Override
 	@SuppressWarnings({ "rawtypes", "unchecked" })
-	public SqlDeleteQueryBuilder buildQuery() {
-		super.buildQuery();
+	public SqlDeleteQueryBuilder build() {
+		super.build();
 		String sql = getBuiltQuery();
 		Set<Map.Entry> parameters2 = getParameters().getParameters().entrySet();
 		for (Map.Entry entry : parameters2) {
 			if (entry.getValue() instanceof SqlDeleteQueryBuilder){
 				SelectQueryBuilder subquery = (SelectQueryBuilder) entry.getValue();
-				subquery.buildQuery();
+				subquery.build();
 				String subsql = subquery.getBuiltQuery();
 				StringBuilder builder = new StringBuilder('(');
 				builder.append(subsql);

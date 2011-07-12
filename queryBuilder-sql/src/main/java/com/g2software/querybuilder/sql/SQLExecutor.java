@@ -1,21 +1,28 @@
 package com.g2software.querybuilder.sql;
 
+import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.text.SimpleDateFormat;
 import java.util.Collection;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import com.g2software.querybuilder.QueryBuilder;
 import com.g2software.querybuilder.QueryBuilderException;
 import com.g2software.querybuilder.QueryExecutor;
+import com.g2software.querybuilder.SelectQueryBuilder;
 
+@SuppressWarnings({ "unchecked", "rawtypes" })
 public class SQLExecutor extends QueryExecutor {
 
 	Connection connection;
@@ -27,15 +34,13 @@ public class SQLExecutor extends QueryExecutor {
 		this.connection = connection;
 	}
 
-
 	protected ResultSet execute() {
 		boolean isUpdateQuery = false;
 		statement = null;
 		resultSet = null;
 
-		
+		String sql = getQueryBuilder().getBuiltQuery();
 		try {
-			String sql = getQueryBuilder().getBuiltQuery();
 			//Replace parameters for ?
 			//First collection
 			Set<Map.Entry> parameters2 = getQueryBuilder().getParameters().getParameters().entrySet();
@@ -67,6 +72,9 @@ public class SQLExecutor extends QueryExecutor {
 				String variableName = m.group(1);
 				Object value = getQueryBuilder().getParameters()
 					.get(variableName);
+				if (value instanceof SelectQueryBuilder){
+					continue;
+				}
 				if (value instanceof Date){
 					statement.setLong(i, Long.parseLong(dateFormat.format((Date) value)));
 					i++;
@@ -95,7 +103,7 @@ public class SQLExecutor extends QueryExecutor {
 				resultSet = statement.executeQuery();
 			}
 		} catch (Exception e) {
-			throw new QueryBuilderException(this.getQueryBuilder(), e);
+			throw new QueryBuilderException("Error executing query sql:"+sql, e);
 		} finally {
 			if (isUpdateQuery) {
 				close();
@@ -136,10 +144,15 @@ public class SQLExecutor extends QueryExecutor {
 	}
 
 	@Override
-	public SqlSelectQueryBuilder getQueryBuilder() {
-		return (SqlSelectQueryBuilder) super.getQueryBuilder();
+	public QueryBuilder getQueryBuilder() {
+		return super.getQueryBuilder();
 	}
 
+	@Override
+	protected void init(QueryBuilder queryBuilder) {
+		super.init(queryBuilder);
+		execute();
+	}
 
 	public <T> T getResult(SqlResultTransformer<T> resultSetProcessor){
 		try {
@@ -155,27 +168,36 @@ public class SQLExecutor extends QueryExecutor {
 		return resultSetProcessor.getResult();
 	}
 	
-	@SuppressWarnings({ "unchecked", "rawtypes" })
+	
 	@Override
 	public List getResultList() {
-		if (getQueryBuilder().getResultTransformer()!=null)
-			return (List)getResult(getQueryBuilder().getResultTransformer());
+		if	(!(getQueryBuilder() instanceof SqlSelectQueryBuilder))
+			throw new QueryBuilderException("This method can only be called for SqlSelectQueryBuilder");
+		SqlSelectQueryBuilder queryBuilder = (SqlSelectQueryBuilder)getQueryBuilder();
+	
+		if (queryBuilder.getResultTransformer()!=null)
+			return (List)getResult(queryBuilder.getResultTransformer());
 		return (List)getResult(new GenericListSqlResultTransformer());
 	}
 	
-	@SuppressWarnings({ "unchecked", "rawtypes" })
 	@Override
 	public Map getResultMap() {
-		if (getQueryBuilder().getResultTransformer()!=null)
-			return (Map)getResult(getQueryBuilder().getResultTransformer());
+		if	(!(getQueryBuilder() instanceof SqlSelectQueryBuilder))
+			throw new QueryBuilderException("This method can only be called for SqlSelectQueryBuilder");
+		SqlSelectQueryBuilder queryBuilder = (SqlSelectQueryBuilder)getQueryBuilder();
+		if (queryBuilder.getResultTransformer()!=null)
+			return (Map)getResult(queryBuilder.getResultTransformer());
 		return (Map)getResult(new GenericMapSqlResultTransformer());
 	}
 
-	@SuppressWarnings({ "unchecked", "rawtypes" })
 	@Override
 	public Object getUniqueResult() {
-		if (getQueryBuilder().getResultTransformer() instanceof ValueObjectFromResultSet)
-			return getUniqueResult((ValueObjectFromResultSet)getQueryBuilder().getResultTransformer());
+		if	(!(getQueryBuilder() instanceof SqlSelectQueryBuilder))
+			throw new QueryBuilderException("This method can only be called for SqlSelectQueryBuilder");
+
+		SqlSelectQueryBuilder queryBuilder = (SqlSelectQueryBuilder)getQueryBuilder();
+		if (queryBuilder.getResultTransformer() instanceof ValueObjectFromResultSet)
+			return getUniqueResult((ValueObjectFromResultSet)queryBuilder.getResultTransformer());
 		return getUniqueResult(new GenericValueObjectFromResultSet());
 	}
 	
@@ -200,5 +222,29 @@ public class SQLExecutor extends QueryExecutor {
 	public SQLExecutor setConnection(Connection connection) {
 		this.connection = connection;
 		return this;
+	}
+	
+	@Override
+	protected void finalize() throws Throwable {
+		super.finalize();
+		close();
+		this.connection=null;
+	}
+	
+	public static Map getMapFromResultSet(ResultSet rs,ResultSetMetaData resultSetMetaData,int startColumn) throws SQLException {
+		int cols = resultSetMetaData.getColumnCount();
+		Map object = new HashMap(cols);
+		for (int i = startColumn; i <= cols; i++) {
+			Object value = rs.getObject(i);
+			String name = resultSetMetaData.getColumnLabel(i);
+			if (value instanceof BigInteger)
+				value = Long.valueOf(((BigInteger) value).intValue() + "");
+			else if (value instanceof BigDecimal)
+				value = Float.valueOf(((BigDecimal) value).floatValue() + "");
+			if (name == null)
+				name = resultSetMetaData.getCatalogName(i);
+			object.put(name, value);
+		}
+		return object;
 	}
 }

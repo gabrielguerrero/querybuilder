@@ -20,7 +20,7 @@ public class WhereClause<T extends QueryBuilder> {
 
 	public WhereClause<T> addAnd(String condition) {
 		if (condition != null)
-			conditions.add(QueryCondition.createAndCondition(condition));
+			conditions.add(QueryCondition.newAndCondition(condition));
 		return this;
 	}
 
@@ -32,7 +32,7 @@ public class WhereClause<T extends QueryBuilder> {
 
 	public WhereClause<T> addOr(String condition) {
 		if (condition != null)
-			conditions.add(QueryCondition.createOrCondition(condition));
+			conditions.add(QueryCondition.newOrCondition(condition));
 		return this;
 	}
 
@@ -54,7 +54,7 @@ public class WhereClause<T extends QueryBuilder> {
 	}
 
 	public WhereClause<T> removeAndCondition(String condition) {
-		return removeCondition(QueryCondition.createAndCondition(condition));
+		return removeCondition(QueryCondition.newAndCondition(condition));
 	}
 
 	public WhereClause<T> removeCondition(QueryCondition condition) {
@@ -64,10 +64,10 @@ public class WhereClause<T extends QueryBuilder> {
 	}
 
 	public WhereClause<T> removeOrCondition(String condition) {
-		return removeCondition(QueryCondition.createOrCondition(condition));
+		return removeCondition(QueryCondition.newOrCondition(condition));
 	}
 
-	protected WhereClause<T> setConditions(LinkedList conditions) {
+	protected WhereClause<T> setConditions(LinkedList<QueryCondition> conditions) {
 		this.conditions = conditions;
 		return this;
 	}
@@ -82,7 +82,7 @@ public class WhereClause<T extends QueryBuilder> {
 		for (int i = 0; i < conditions.size(); i++) {
 			QueryCondition condition = conditions.get(i);
 			if (i > 0) {
-				if (condition.getType() == QueryCondition.AND)
+				if (condition.getType() == QueryCondition.Type.AND)
 					str.append(AND_STR);
 				else
 					str.append(OR_STR);

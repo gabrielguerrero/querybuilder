@@ -13,6 +13,10 @@ public abstract class MapSqlResultTransformerGroupedByKey<K,V> implements SqlRes
 	protected Map<K,List<V>> resultMap;
 	private int cols;
 
+	public MapSqlResultTransformerGroupedByKey() {
+		this.resultMap = new HashMap();
+	}
+	
 	public MapSqlResultTransformerGroupedByKey(int initialMapCapacity) {
 		this.resultMap = new HashMap(initialMapCapacity);
 	}
@@ -30,7 +34,7 @@ public abstract class MapSqlResultTransformerGroupedByKey<K,V> implements SqlRes
 		cols = meta.getColumnCount();
 	}
 
-	public void processRow(ResultSet rs) {
+	public void processRow(ResultSet rs) throws SQLException{
 		K rowId = getRowId(rs);
 		List<V> list = resultMap.get(rowId);
 		if (list==null){
@@ -40,9 +44,9 @@ public abstract class MapSqlResultTransformerGroupedByKey<K,V> implements SqlRes
 		list.add(getBeanForRow(rs));
 	}
 	
-	public abstract V getBeanForRow(ResultSet rs);
+	public abstract V getBeanForRow(ResultSet rs) throws SQLException;
 	
-	public abstract K getRowId(ResultSet result);
+	public abstract K getRowId(ResultSet rs) throws SQLException;
 	
 	public Map<K,List<V>> getResult() {
 		return resultMap;

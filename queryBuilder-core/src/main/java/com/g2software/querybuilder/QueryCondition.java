@@ -3,46 +3,45 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class QueryCondition {
-	private List conditions = new ArrayList();
-	public static final int AND = 0;
-	public static final int OR = 1;
-	private int type = AND;
+	private List<QueryCondition> conditions = new ArrayList<QueryCondition>();
+	private Type type = Type.AND;
 	private String condition;
+	public enum Type {AND,OR};
 	
-	public static QueryCondition createAndCondition() {
-		return new QueryCondition(AND);
+	public static QueryCondition newAndCondition() {
+		return new QueryCondition(Type.AND);
 	}
-	public static QueryCondition createAndCondition(String condition) {
-		return new QueryCondition(condition,AND);
+	public static QueryCondition newAndCondition(String condition) {
+		return new QueryCondition(condition,Type.AND);
 	}
-	public static QueryCondition createOrCondition(String condition) {
-		return new QueryCondition(condition,OR);
+	public static QueryCondition newOrCondition(String condition) {
+		return new QueryCondition(condition,Type.OR);
 	}
-	public static QueryCondition createOrCondition() {
-		return new QueryCondition(OR);
+	
+	public static QueryCondition newOrCondition() {
+		return new QueryCondition(Type.OR);
 	}
-	public QueryCondition(int type) {
+	
+	public QueryCondition(Type type) {
 		this.type = type;
 	}
-	private QueryCondition(String condition,int type) {
+	
+	private QueryCondition(String condition,Type type) {
 		this.type = type;
 		this.condition = condition;
 	}
-	private QueryCondition() {
-		this.type = AND;
-	}
 	
-	public QueryCondition addAndSubCondition(String condition) {
+	public QueryCondition addAnd(String condition) {
 		if (condition!=null)
-		conditions.add(new QueryCondition(condition,QueryCondition.AND));
+			conditions.add(new QueryCondition(condition,QueryCondition.Type.AND));
 		return this;
 	}
-	public QueryCondition addOrSubCondition(String condition) {
+	public QueryCondition addOr(String condition) {
 		if (condition!=null)
-		conditions.add(new QueryCondition(condition,QueryCondition.OR));
+			conditions.add(new QueryCondition(condition,QueryCondition.Type.OR));
 		return this;
 	}
-	public QueryCondition addSubCondition(QueryCondition condition) {
+	public QueryCondition addCondition(QueryCondition condition) {
 		if (condition!=null && !condition.isEmpty())
 			conditions.add(condition);
 		return this;
@@ -59,29 +58,35 @@ public class QueryCondition {
 	public String toString() {
 		StringBuffer str = new StringBuffer();
 		
+		if (condition!=null && conditions.size()>0)
+			str.append('(');
+			
 		if (condition!=null)
 			str.append(condition);
 		
+		if (condition!=null && conditions.size()>0)
+			str.append(')');
+			
 		for (int i = 0; i < conditions.size(); i++) {
-			QueryCondition condition = (QueryCondition) conditions.get(i);
-			if (i>0) {
-				if (condition.type == QueryCondition.AND)
+			QueryCondition subcondition = (QueryCondition) conditions.get(i);
+			if (i>0 || condition!=null) {
+				if (subcondition.type == QueryCondition.Type.AND)
 					str.append(" and ");
 				else
 					str.append(" or ");
-			}	
+			} 	
 			str.append('(');
-			str.append(condition.toString());
+			str.append(subcondition.toString());
 			str.append(')');
 		}
 		return str.toString();
 	}
 
-	public int getType() {
+	public Type getType() {
 		return type;
 	}
 
-	public void setType(int type) {
+	public void setType(Type type) {
 		this.type = type;
 	}
 	public String getCondition() {
@@ -98,14 +103,20 @@ public class QueryCondition {
 	public boolean isEmpty() {
 		return this.getCondition()== null && !hasSubConditions(); 
 	}
+	
+	@Override
 	public int hashCode() {
-		final int PRIME = 31;
+		final int prime = 31;
 		int result = 1;
-		result = PRIME * result + ((condition == null) ? 0 : condition.hashCode());
-		result = PRIME * result + ((conditions == null) ? 0 : conditions.hashCode());
-		result = PRIME * result + type;
+		result = prime * result
+				+ ((condition == null) ? 0 : condition.hashCode());
+		result = prime * result
+				+ ((conditions == null) ? 0 : conditions.hashCode());
+		result = prime * result + ((type == null) ? 0 : type.hashCode());
 		return result;
 	}
+	
+	@Override
 	public boolean equals(Object obj) {
 		if (this == obj)
 			return true;
@@ -113,7 +124,7 @@ public class QueryCondition {
 			return false;
 		if (getClass() != obj.getClass())
 			return false;
-		final QueryCondition other = (QueryCondition) obj;
+		QueryCondition other = (QueryCondition) obj;
 		if (condition == null) {
 			if (other.condition != null)
 				return false;
@@ -128,4 +139,6 @@ public class QueryCondition {
 			return false;
 		return true;
 	}
+	
+	
 }

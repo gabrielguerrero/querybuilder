@@ -27,21 +27,7 @@ import java.util.Map;
 						+ "");
 			return value;
 		} else {
-			Map object = new HashMap(cols);
-			for (int i = 2; i <= cols; i++) {
-				Object value = rs.getObject(i);
-				String name = getResultSetMetaData().getColumnLabel(i);
-				if (value instanceof BigInteger)
-					value = Long.valueOf(((BigInteger) value).intValue()
-							+ "");
-				
-				else if (value instanceof BigDecimal)
-					value = Float.valueOf(((BigDecimal) value).floatValue()
-							+ "");
-				if (name == null)
-					name = getResultSetMetaData().getCatalogName(i);
-				object.put(name, value);
-			}
+			Map object = SQLExecutor.getMapFromResultSet(rs,rs.getMetaData(),2);
 			return object;
 		}
 	}

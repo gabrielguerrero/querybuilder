@@ -16,6 +16,10 @@ public abstract class MapSqlResultTransformer<K,V> implements SqlResultTransform
 	public MapSqlResultTransformer(int initialMapCapacity) {
 		this.resultMap = new HashMap(initialMapCapacity);
 	}
+	
+	public MapSqlResultTransformer() {
+		this.resultMap = new HashMap();
+	}
 
 	public MapSqlResultTransformer(int mapInitialCapacity, float mapLoadFactor) {
 		this.resultMap = new HashMap(mapInitialCapacity, mapLoadFactor);

@@ -1,6 +1,11 @@
 package com.g2software.querybuilder;
 
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
 
+
+@SuppressWarnings({ "rawtypes", "unchecked" })
 public abstract class SelectQueryBuilder<E extends SelectQueryBuilder<?, ?>, T extends QueryExecutor>
 		extends QueryBuilder<E, T> {
 
@@ -15,10 +20,11 @@ public abstract class SelectQueryBuilder<E extends SelectQueryBuilder<?, ?>, T e
 
 	public SelectQueryBuilder(T queryExecutor) {
 		super(queryExecutor);
+		select("*");
 	}
 
 	@Override
-	public E buildQuery() {
+	public E build() {
 
 		StringBuilder queryWriter = new StringBuilder(select().size() * 20
 				+ select().size() * 30 + where().size() * 30 + 40);
@@ -44,21 +50,49 @@ public abstract class SelectQueryBuilder<E extends SelectQueryBuilder<?, ?>, T e
 		}
 
 		setBuiltQuery(queryWriter.toString());
+		
+		Map newParameters = new HashMap();
+		Set<Map.Entry> parameters2 = getParameters().getParameters().entrySet();
+		for (Map.Entry entry : parameters2) {
+			if (entry.getValue() instanceof SelectQueryBuilder){
+				SelectQueryBuilder subquery = (SelectQueryBuilder) entry.getValue();
+				subquery.build();
+				String subsql = subquery.getBuiltQuery();
+				StringBuilder builder = new StringBuilder();
+				builder.append('(');
+				builder.append(subsql);
+				builder.append(')');
+				String sql = getBuiltQuery();
+				subsql = builder.toString();
+				sql = sql.replaceAll("\\:"+entry.getKey(), subsql);
+				newParameters.putAll(subquery.getParameters().getParameters());
+				setBuiltQuery(sql);
+			} 
+		}
+		getParameters().getParameters().putAll(newParameters);
+		
 		return (E) this;
 	}
 
 	public E clearFirstAndMaxResultLimits() {
+		queryChanged();
 		setMaxResults(-1);
 		setFirstResults(-1);
 		return (E) this;
 	}
 
 	public StatementClause<E> from() {
+		queryChanged();
 		return joins;
 	}
 
-	public StatementClause<E> from(String from) {
-		return from().clear().add(from);
+	public E from(String from,String... joins) {
+		from().clear().add(from);
+		if (joins!=null)
+			for (int i = 0; i < joins.length; i++) {
+				from().add(joins[i]);
+			}
+		return from().end();
 	}
 
 	public int getFirstResults() {
@@ -70,6 +104,7 @@ public abstract class SelectQueryBuilder<E extends SelectQueryBuilder<?, ?>, T e
 	}
 
 	public StatementClause<E> groupBy() {
+		queryChanged();
 		return groupByFields;
 	}
 
@@ -82,6 +117,7 @@ public abstract class SelectQueryBuilder<E extends SelectQueryBuilder<?, ?>, T e
 	}
 
 	public OrderByClause<E> orderBy() {
+		queryChanged();
 		return orderByFields;
 	}
 
@@ -92,8 +128,15 @@ public abstract class SelectQueryBuilder<E extends SelectQueryBuilder<?, ?>, T e
 		}
 		return orderBy().end();
 	}
+	
+	public E orderBy(String orderBy,boolean ascending) {
+		orderBy().clear();
+		orderBy().add(orderBy,ascending);
+		return orderBy().end();
+	}
 
 	public FieldsCollection<E> select() {
+		queryChanged();
 		return fields;
 	}
 
@@ -106,11 +149,13 @@ public abstract class SelectQueryBuilder<E extends SelectQueryBuilder<?, ?>, T e
 	}
 
 	public E setFirstResults(int firstResult) {
+		queryChanged();
 		this.firstResults = firstResult;
 		return (E) this;
 	}
 
 	public E setMaxResults(int maxResult) {
+		queryChanged();
 		this.maxResults = maxResult;
 		return (E) this;
 	}
@@ -121,11 +166,16 @@ public abstract class SelectQueryBuilder<E extends SelectQueryBuilder<?, ?>, T e
 	}
 
 	public WhereClause<E> where() {
+		queryChanged();
 		return conditions;
 	}
 
-	public WhereClause<E> where(String where) {
-		return where().clear().addAnd(where);
+	public E where(String... conditions) {
+		where().clear();
+		for (int i = 0; i < conditions.length; i++) {
+			where().addAnd(conditions[i]);
+		}
+		return where().end();
 	}
 
 	@Override
@@ -149,27 +199,22 @@ public abstract class SelectQueryBuilder<E extends SelectQueryBuilder<?, ?>, T e
 		return queryBuilder;
 	}
 
-	@SuppressWarnings("unchecked")
 	private void setConditions(WhereClause<?> conditions) {
 		this.conditions = (WhereClause<E>) conditions;
 	}
 
-	@SuppressWarnings("unchecked")
 	private void setFields(FieldsCollection<?> fields) {
 		this.fields = (FieldsCollection<E>) fields;
 	}
 
-	@SuppressWarnings("unchecked")
 	private void setGroupByFields(StatementClause<?> groupByFields) {
 		this.groupByFields = (StatementClause<E>) groupByFields;
 	}
 
-	@SuppressWarnings("unchecked")
 	protected final void setOrderByFields(OrderByClause<?> orderByFields) {
 		this.orderByFields = (OrderByClause<E>) orderByFields;
 	}
 
-	@SuppressWarnings("unchecked")
 	private void setJoins(StatementClause<?> joins) {
 		this.joins = (StatementClause<E>) joins;
 	}

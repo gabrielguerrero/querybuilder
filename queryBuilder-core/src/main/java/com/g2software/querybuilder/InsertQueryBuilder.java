@@ -2,7 +2,7 @@ package com.g2software.querybuilder;
 
 import java.util.LinkedList;
 
-
+@SuppressWarnings({ "unchecked","rawtypes" })
 public abstract class InsertQueryBuilder<E extends InsertQueryBuilder<?, ?>, T extends QueryExecutor>
 		extends QueryBuilder<E, T> {
 
@@ -17,11 +17,13 @@ public abstract class InsertQueryBuilder<E extends InsertQueryBuilder<?, ?>, T e
 	}
 
 	public InsertQueryBuilder<E,T> insertInto(String table) {
+		queryChanged();
 		this.table = table;
 		return this;
 	}
 	
-	public InsertQueryBuilder<E,T> setValuesFrom(SelectQueryBuilder<SelectQueryBuilder<?,?>, T> valuesFrom){
+	public InsertQueryBuilder<E,T> setValuesFrom(SelectQueryBuilder valuesFrom){
+		queryChanged();
 		this.valuesFrom = valuesFrom;
 		return this;
 	}
@@ -30,20 +32,23 @@ public abstract class InsertQueryBuilder<E extends InsertQueryBuilder<?, ?>, T e
 		return table;
 	}
 	@Override
-	public E buildQuery() {
+	public E build() {
 
 		StringBuilder queryWriter = new StringBuilder("insert into "+getInsertTable());
 		queryWriter.append(" (");
 
 		fields().joinBy(',', queryWriter);
 
-		queryWriter.append(") ");
+		queryWriter.append(")");
 
 		if (valuesFrom!=null){
-			String selectQuery = valuesFrom.buildQuery().getBuiltQuery();
-			queryWriter.append(selectQuery);
-		} else {
+			String selectQuery = valuesFrom.build().getBuiltQuery();
 			queryWriter.append(" (");
+			queryWriter.append(selectQuery);
+			queryWriter.append(")");
+			getParameters().getParameters().putAll(valuesFrom.getParameters().getParameters());
+		} else {
+			queryWriter.append(" values (");
 			
 			LinkedList<Field> fieldsList = fields.getFieldsList();
 			for (int i = 0;i<fields().size();i++) {
@@ -67,6 +72,7 @@ public abstract class InsertQueryBuilder<E extends InsertQueryBuilder<?, ?>, T e
 
 
 	public FieldsCollection<E> fields() {
+		queryChanged();
 		return fields;
 	}
 
@@ -104,7 +110,6 @@ public abstract class InsertQueryBuilder<E extends InsertQueryBuilder<?, ?>, T e
 		return queryBuilder;
 	}
 
-	@SuppressWarnings("unchecked")
 	private void setFields(FieldsCollection<?> fields) {
 		this.fields = (FieldsCollection<E>) fields;
 	}

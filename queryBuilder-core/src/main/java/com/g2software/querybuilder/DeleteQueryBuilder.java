@@ -1,5 +1,9 @@
 package com.g2software.querybuilder;
 
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
+
 public abstract class DeleteQueryBuilder<E extends DeleteQueryBuilder<?, ?>, T extends QueryExecutor>
 		extends QueryBuilder<E, T> {
 
@@ -11,8 +15,10 @@ public abstract class DeleteQueryBuilder<E extends DeleteQueryBuilder<?, ?>, T e
 		super(queryExecutor);
 	}
 
-	public void deleteFrom(String table) {
+	public E deleteFrom(String table) {
+		queryChanged();
 		this.table = table;
+		return (E) this;
 	}
 	
 	public String getDeleteTable() {
@@ -20,15 +26,20 @@ public abstract class DeleteQueryBuilder<E extends DeleteQueryBuilder<?, ?>, T e
 	}
 	
 	public WhereClause<E> where() {
+		queryChanged();
 		return conditions;
 	}
 
-	public WhereClause<E> where(String where) {
-		return where().clear().addAnd(where);
+	public E where(String... conditions) {
+		where().clear();
+		for (int i = 0; i < conditions.length; i++) {
+			where().addAnd(conditions[i]);
+		}
+		return where().end();
 	}
 	
 	@Override
-	public E buildQuery() {
+	public E build() {
 
 		StringBuilder queryWriter = new StringBuilder("delete from "+getDeleteTable());
 
@@ -38,6 +49,26 @@ public abstract class DeleteQueryBuilder<E extends DeleteQueryBuilder<?, ?>, T e
 		}	
 		
 		setBuiltQuery(queryWriter.toString());
+		
+		Map newParameters = new HashMap();
+		Set<Map.Entry> parameters2 = getParameters().getParameters().entrySet();
+		for (Map.Entry entry : parameters2) {
+			if (entry.getValue() instanceof SelectQueryBuilder){
+				SelectQueryBuilder subquery = (SelectQueryBuilder) entry.getValue();
+				subquery.build();
+				String subsql = subquery.getBuiltQuery();
+				StringBuilder builder = new StringBuilder();
+				builder.append('(');
+				builder.append(subsql);
+				builder.append(')');
+				String sql = getBuiltQuery();
+				subsql = builder.toString();
+				sql = sql.replaceAll("\\:"+entry.getKey(), subsql);
+				newParameters.putAll(subquery.getParameters().getParameters());
+				setBuiltQuery(sql);
+			} 
+		}
+		getParameters().getParameters().putAll(newParameters);
 		return (E) this;
 	}
 

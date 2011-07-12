@@ -6,20 +6,19 @@ public abstract class QueryBuilder<E extends QueryBuilder<?,?>, T extends QueryE
 	private String query;
 	private ParameterCollection parameters = new ParameterCollection();
 	private T queryExecutor;
-
 	public QueryBuilder(T queryExecutor) {
 		this.queryExecutor = queryExecutor;
 	}
 
 	public T execute() {
 		if (getBuiltQuery()==null){
-			buildQuery();
+			build();
 		}
 		queryExecutor.init(this);
 		return queryExecutor;
 	}
 
-	public E buildQuery()  {
+	public E build()  {
 		return (E) this;
 	}
 
@@ -43,4 +42,8 @@ public abstract class QueryBuilder<E extends QueryBuilder<?,?>, T extends QueryE
 		this.parameters = parameters;
 	}
 
+	protected void queryChanged(){
+		if (getBuiltQuery()!=null)
+			setBuiltQuery(null);
+	}
 }

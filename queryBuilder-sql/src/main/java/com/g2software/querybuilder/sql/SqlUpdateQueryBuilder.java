@@ -33,14 +33,14 @@ public class SqlUpdateQueryBuilder extends UpdateQueryBuilder<SqlUpdateQueryBuil
 	
 	@Override
 	@SuppressWarnings({ "rawtypes", "unchecked" })
-	public SqlUpdateQueryBuilder buildQuery() {
-		super.buildQuery();
+	public SqlUpdateQueryBuilder build() {
+		super.build();
 		String sql = getBuiltQuery();
 		Set<Map.Entry> parameters2 = getParameters().getParameters().entrySet();
 		for (Map.Entry entry : parameters2) {
 			if (entry.getValue() instanceof SqlUpdateQueryBuilder){
 				SelectQueryBuilder subquery = (SelectQueryBuilder) entry.getValue();
-				subquery.buildQuery();
+				subquery.build();
 				String subsql = subquery.getBuiltQuery();
 				StringBuilder builder = new StringBuilder('(');
 				builder.append(subsql);

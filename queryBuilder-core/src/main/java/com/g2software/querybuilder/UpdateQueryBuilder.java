@@ -1,8 +1,11 @@
 package com.g2software.querybuilder;
 
+import java.util.HashMap;
 import java.util.LinkedList;
+import java.util.Map;
+import java.util.Set;
 
-
+@SuppressWarnings({ "unchecked","rawtypes" })
 public abstract class UpdateQueryBuilder<E extends UpdateQueryBuilder<?, ?>, T extends QueryExecutor>
 		extends QueryBuilder<E, T> {
 
@@ -17,8 +20,10 @@ public abstract class UpdateQueryBuilder<E extends UpdateQueryBuilder<?, ?>, T e
 		super(queryExecutor);
 	}
 
-	public void update(String table) {
+	public E update(String table) {
+		queryChanged();
 		this.table = table;
+		return (E) this;
 	}
 	
 	public String getUpdateTable() {
@@ -26,20 +31,26 @@ public abstract class UpdateQueryBuilder<E extends UpdateQueryBuilder<?, ?>, T e
 	}
 	
 	public WhereClause<E> where() {
+		queryChanged();
 		return conditions;
 	}
 
-	public WhereClause<E> where(String where) {
-		return where().clear().addAnd(where);
+	public E where(String... conditions) {
+		where().clear();
+		for (int i = 0; i < conditions.length; i++) {
+			where().addAnd(conditions[i]);
+		}
+		return where().end();
 	}
 	
 	@Override
-	public E buildQuery() {
+	public E build() {
 
 		StringBuilder queryWriter = new StringBuilder("update "+getUpdateTable());
 
-		queryWriter.append("set ");
+		queryWriter.append(" set ");
 		LinkedList<Field> fieldsList = fields.getFieldsList();
+		Map newParameters = new HashMap();
 		for (int i = 0;i<fields().size();i++) {
 			Field f = fieldsList.get(i);
 			Object value = getParameters().get(f.getName());
@@ -48,15 +59,15 @@ public abstract class UpdateQueryBuilder<E extends UpdateQueryBuilder<?, ?>, T e
 			queryWriter.append(f.getName());
 			if (value instanceof SelectQueryBuilder){
 				SelectQueryBuilder subquery = (SelectQueryBuilder) value;
-				subquery.buildQuery();
+				subquery.build();
 				String sql = subquery.getBuiltQuery();
 				queryWriter.append(" = (");
 				queryWriter.append(sql);
 				queryWriter.append(") ");
-				getParameters().getParameters().putAll(subquery.getParameters().getParameters());
+				newParameters.putAll(subquery.getParameters().getParameters());
 			} else {
 				queryWriter.append(" = :");
-				queryWriter.append(" = :"+f.getName());
+				queryWriter.append(f.getName());
 			}
 			
 		}
@@ -64,27 +75,48 @@ public abstract class UpdateQueryBuilder<E extends UpdateQueryBuilder<?, ?>, T e
 		if (!where().isEmpty()) {
 			queryWriter.append(" where ");
 			queryWriter.append(where().toString());
-		}	
+		}
 		
 		setBuiltQuery(queryWriter.toString());
+		
+		Set<Map.Entry> parameters2 = getParameters().getParameters().entrySet();
+		for (Map.Entry entry : parameters2) {
+			if (entry.getValue() instanceof SelectQueryBuilder){
+				SelectQueryBuilder subquery = (SelectQueryBuilder) entry.getValue();
+				subquery.build();
+				String subsql = subquery.getBuiltQuery();
+				StringBuilder builder = new StringBuilder();
+				builder.append('(');
+				builder.append(subsql);
+				builder.append(')');
+				String sql = getBuiltQuery();
+				subsql = builder.toString();
+				sql = sql.replaceAll("\\:"+entry.getKey(), subsql);
+				newParameters.putAll(subquery.getParameters().getParameters());
+				setBuiltQuery(sql);
+			} 
+		}
+		getParameters().getParameters().putAll(newParameters);
 		return (E) this;
 	}
 
 
 
 	public FieldsCollection<E> fields() {
+		queryChanged();
 		return fields;
 	}
 
-	public E fields(String... fields) {
-		fields().clear();
-		for (int i = 0; i < fields.length; i++) {
-			fields().add(fields[i]);
-		}
-		return fields().end();
-	}
+//	public E fields(String... fields) {
+//		fields().clear();
+//		for (int i = 0; i < fields.length; i++) {
+//			fields().add(fields[i]);
+//		}
+//		return fields().end();
+//	}
 
 	public E setFieldValue(String name, Object value){
+		queryChanged();
 		fields().add(name);
 		setParameter(name, value);
 		return (E) this;

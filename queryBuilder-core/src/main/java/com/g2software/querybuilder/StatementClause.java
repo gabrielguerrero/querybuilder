@@ -98,6 +98,8 @@ public class StatementClause<T extends QueryBuilder> {
 	public StatementClause<T> replace(String newStatement, String oldStatement) {
 		oldStatement = oldStatement.trim();
 		int position = this.statements.indexOf(oldStatement);
+		if (position==-1)
+			throw new QueryBuilderException("The statement to replace is not found. oldStatement:"+oldStatement);
 		remove(position);
 		add(position, newStatement);
 		return this;

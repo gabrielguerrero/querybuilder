@@ -85,7 +85,8 @@ public class HqlExecutor extends QueryExecutor {
 
 	@Override
 	public void close() {
-		getSession().close();
+		if (getSession()!=null)
+			getSession().close();
 	}
 
 	public Query getQuery() {
@@ -175,4 +176,5 @@ public class HqlExecutor extends QueryExecutor {
 		this.session = session;
 		return this;
 	}
+	
 }
