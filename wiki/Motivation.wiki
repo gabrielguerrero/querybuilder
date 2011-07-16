@@ -1,0 +1,19 @@
+#summary How it works?.
+= Motivation =
+	The reason for this library started some time ago when I had to make a very complex report in sql, it was around 30 possible options  the user could use to tune the results in the advanced search, the search generally had to process millions of results, I wanted to use hibernate but at the time hibernate could only return the results as list which make the million of results very heavy for the server in memory, my only option was to stream the result using sql, processing each row and store matches in another table, I tryed to use PreparedStaments but the logic became a nightmare of where, ands/or, joins plus sql doesnt have named parameters, so setting the right position of parameters in 30 optional conditions was a bit complicated and error prone.
+	
+    The solution to that problem was this library, at the  end I manage to reduce the execution from hours to less than 30 secs for millions of results, then in my company we start using it for any kind of query complex or not, I also did a hql version because we also heavily used hibernate.
+	
+= When to use this library =
+This library is best suited to solve complex queries like the ones needed for reports and advanced searches
+
+But If your project only uses sql (no Hibernate, JPA	,etc) I suggest you to use it for every query even simple ones, because internally this library uses PreparedStament for all the queries which plus the named parameters gives you sql injection protection and better performance (dbs generally precompile,cache and reuse PreparedStatements), plus using this library avoids the need of doing the very error prone try catchs to close ResultSet and PreparedStatements, also SqlException are wrap in Unchecked Exception.
+
+If you use hibernate, used this only for complex queries or you need to finely tune the perfomance of a query, for simple queries prefer using Hibernate NamedQueries just because they are validated at deploy 
+
+= How it works? =
+
+ In its core this lib is just a smart StringBuilder , it basically stores the parts of the queries in collections , which are later joined using a StringBuilder when you call the build method, the fact that the parts are stored in collections is what allow us to add, remove, change and reuse the query
+
+ The lib is very simple (but very powerful), the core is made of a bit more of 10 classes, and there is like 10 classes more for each of the sql and hql version
+ 

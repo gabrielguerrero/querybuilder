@@ -1,0 +1,35 @@
+= Setup =
+
+To start using the library you just need to create an implementation of ConnectionProvider, in this class you should create a java.sql.Connection object from a connection pool, or connection per request or session, or whatever logic you use to control conections,
+after you have defined this class you can create a SqlQueryFactory , the recomend way is that to create you ConnectionProvider implementation and use guice or spring or your favorite DI library to create the SqlQueryFactory, but for this example I will do the wiring manually
+
+{{{
+ public class MyConnectionProvider implements ConnectionProvider {
+ 	
+ 	public Connection get() {
+ 		try {
+ 			// here you put the logic to create,or reuse a connection from a conection pool 
+ 			//or any logic you have like connection per request or per session
+ 			.
+ 			.
+ 			.
+ 			return connection;
+ 		} catch (Exception e) {
+ 			throw new RuntimeException(e);
+ 		}
+ 	}
+ }
+ 
+ .
+ .
+ .
+ // then in your code
+ SqlQueryFactory queryFactory = new SqlQueryFactory(new MyConnectionProvider());
+ 
+ // then we create the query 
+ SqlSelectQueryBuilder queryBuilder = queryFactory.newSelectQueryBuilder();
+ queryBuilder.select("*").from("Customer");
+ queryBuilder.build();
+ System.out.println(queryBuilder.getBuiltQuery());
+ List<Map<String,?>> resultList = queryBuilder.execute().getResultList();
+}}}	 
