@@ -37,6 +37,7 @@ import java.util.Map.Entry;
 import org.junit.Before;
 import org.junit.Test;
 
+import com.querybuilder.InsertQueryBuilder;
 import com.querybuilder.sql.ConnectionProvider;
 import com.querybuilder.sql.ListSqlResultTransformer;
 import com.querybuilder.sql.MapSqlResultTransformer;
@@ -113,6 +114,41 @@ public class QueryTester extends DBTestBase{
 		assertNotNull(entry.getValue().get("LASTNAME"));
 	}
 	
+	@Test
+	public void testMapResult2() throws Exception{
+		SqlSelectQueryBuilder queryBuilder = queryFactory.newSelectQueryBuilder();
+		queryBuilder.select("c.id").from("Customer c");
+		queryBuilder.build();
+		System.out.println(queryBuilder.getBuiltQuery());
+		Map<Long,Map> result = queryBuilder.execute().getResultMap();
+		
+		for (Map.Entry<Long,Map> entry : result.entrySet()) {
+			System.out.println("key:"+entry.getKey()+" value:"+entry.getValue());
+		}
+		
+		assertThat(result.size(), greaterThan(1));
+		Entry<Long, Map> entry = result.entrySet().iterator().next();
+		assertTrue(entry.getKey() instanceof Long);
+		assertEquals(Boolean.TRUE,entry.getValue());
+	}
+	@Test
+	public void testMapResult3() throws Exception{
+		SqlSelectQueryBuilder queryBuilder = queryFactory.newSelectQueryBuilder();
+		queryBuilder.select("i.customerId,sum(it.cost)").from("Invoice i","inner join Item it on it.invoiceId=i.id").groupBy("i.customerId");
+		queryBuilder.build();
+		System.out.println(queryBuilder.getBuiltQuery());
+		Map<Long,Map> result = queryBuilder.execute().getResultMap();
+		
+		for (Map.Entry<Long,Map> entry : result.entrySet()) {
+			System.out.println("key:"+entry.getKey()+" value:"+entry.getValue());
+		}
+		
+		assertThat(result.size(), greaterThan(1));
+		Entry<Long, ?> entry = result.entrySet().iterator().next();
+		assertTrue(entry.getKey() instanceof Long);
+		assertTrue(entry.getValue() instanceof Float);
+		assertNotNull(entry.getValue());
+	}
 	
 	@Test
 	public void testSqlResultTransformer() throws Exception{
@@ -208,7 +244,71 @@ public class QueryTester extends DBTestBase{
 		assertNotNull(entry.getValue());
 		assertTrue(entry.getValue());
 	}
-	
+	@Test
+	public void testMapSqlResultToBeanTransformer() throws Exception{
+		SqlSelectQueryBuilder queryBuilder = queryFactory.newSelectQueryBuilder();
+		queryBuilder.select("*").from("Customer");
+		queryBuilder.build();
+		System.out.println(queryBuilder.getBuiltQuery());
+		Map<Long, Customer> result = queryBuilder.execute().getResult(new MapSqlResultTransformer<Long, Customer>() {
+			
+			@Override
+			public Customer getValueObject(ResultSet rs) throws SQLException {
+				Customer customer = new Customer();
+				customer.setId(rs.getLong("ID"));
+				customer.setFirstName(rs.getString("FIRSTNAME"));
+				customer.setLastName(rs.getString("LASTNAME"));
+				customer.setCity(rs.getString("CITY"));
+				customer.setStreet(rs.getString("STREET"));
+				return customer;
+			}
+			
+			@Override
+			public Long getIdObject(ResultSet rs) throws SQLException {
+				return rs.getLong("ID");
+			}
+		});
+		
+		
+		assertThat(result.size(), greaterThan(1));
+		Entry<Long, Customer> entry = result.entrySet().iterator().next();
+		assertNotNull(entry.getKey());
+		assertNotNull(entry.getValue());
+		assertNotNull(entry.getValue().getCity());
+		assertNotNull(entry.getValue().getFirstName());
+		assertNotNull(entry.getValue().getId());
+		assertNotNull(entry.getValue().getLastName());
+		assertNotNull(entry.getValue().getStreet());
+	}
+	@Test
+	public void testUniqueBeanSqlResultToBeanTransformer() throws Exception{
+		SqlSelectQueryBuilder queryBuilder = queryFactory.newSelectQueryBuilder();
+		queryBuilder.select("*").from("Customer");
+		queryBuilder.build();
+		System.out.println(queryBuilder.getBuiltQuery());
+		Customer customer = queryBuilder.execute().getUniqueResult(new ValueObjectFromResultSet<Customer>() {
+
+			public Customer getValueObject(ResultSet rs) throws SQLException {
+				Customer customer = new Customer();
+				customer.setId(rs.getLong("ID"));
+				customer.setFirstName(rs.getString("FIRSTNAME"));
+				customer.setLastName(rs.getString("LASTNAME"));
+				customer.setCity(rs.getString("CITY"));
+				customer.setStreet(rs.getString("STREET"));
+				return customer;
+			}
+			
+		});
+		
+		
+		
+		assertNotNull(customer);
+		assertNotNull(customer.getCity());
+		assertNotNull(customer.getFirstName());
+		assertNotNull(customer.getId());
+		assertNotNull(customer.getLastName());
+		assertNotNull(customer.getStreet());
+	}
 	@Test
 	public void testMapSqlResultTransformerGroupedByKey() throws Exception{
 		SqlSelectQueryBuilder queryBuilder = queryFactory.newSelectQueryBuilder();
@@ -294,9 +394,11 @@ public class QueryTester extends DBTestBase{
 		SqlSelectQueryBuilder queryBuilder = queryFactory.newSelectQueryBuilder();
 		Integer count = (Integer) queryBuilder.select("count(*)").from("Customer c").execute().getUniqueResult();
 		
-		int updateCount = queryFactory.newInsertQueryBuilder().insertInto("Customer").fields("ID","FIRSTNAME","LASTNAME")
-												.setValuesFrom(queryBuilder.select("c.id+500,c.firstName,c.lastName"))
-												.execute().getUpdateCount();
+		SqlInsertQueryBuilder insertQueryBuilder = queryFactory.newInsertQueryBuilder().insertInto("Customer").fields("ID","FIRSTNAME","LASTNAME")
+												.setValuesFrom(queryBuilder.select("c.id+500,c.firstName,c.lastName"));
+		insertQueryBuilder.build();
+		System.out.println("sql "+ insertQueryBuilder.getBuiltQuery());
+		int updateCount = insertQueryBuilder.execute().getUpdateCount();
 		
 		assertThat(updateCount, equalTo(count));
 		Integer count2 = (Integer) queryBuilder.select("count(*)").build().execute().getUniqueResult();
@@ -306,58 +408,62 @@ public class QueryTester extends DBTestBase{
 	@Test
 	public void testUpdate() throws Exception{
 		
-		SqlSelectQueryBuilder queryBuilder = queryFactory.newSelectQueryBuilder();
+		SqlSelectQueryBuilder selectQuery = queryFactory.newSelectQueryBuilder();
 		
-		int updateCount = queryFactory.newUpdateQueryBuilder().update("Customer c")
-												.setFieldValue("FIRSTNAME", "Gab")
-												.setFieldValue("LASTNAME", "Gue")
-												.where("c.firstName like :name")
-												.setParameter("name", "Andrew")
-												.execute().getUpdateCount();
+		SqlUpdateQueryBuilder updateQuery = queryFactory.newUpdateQueryBuilder();
+		updateQuery.update("Customer c")
+							 .setFieldValue("FIRSTNAME", "Gabriel")
+							 .setFieldValue("LASTNAME", "Guerrero")
+							 .where("c.firstName like :name")
+							 .setParameter("name", "Andrew");
+		updateQuery.build();
+		System.out.println("sql: "+ updateQuery.getBuiltQuery());
+		
+		int updateCount = updateQuery.execute().getUpdateCount();
 		
 		assertThat(updateCount,greaterThan(1));
 		
 		//execute the query again to ensure none more andrews are left
-		queryBuilder.select("*").from("Customer c").where("c.firstName like :name").setParameter("name", "Andrew").execute().getUniqueResult();
-		assertNull(queryBuilder.execute().getUniqueResult());
+		selectQuery.select("*").from("Customer c").where("c.firstName like :name").setParameter("name", "Andrew").execute().getUniqueResult();
+		assertNull(selectQuery.execute().getUniqueResult());
 	}
 
 	
 	@Test
 	public void testUpdate2() throws Exception{
 		
-		SqlSelectQueryBuilder queryBuilder = queryFactory.newSelectQueryBuilder();
+		SqlSelectQueryBuilder selectQuery = queryFactory.newSelectQueryBuilder();
+		SqlUpdateQueryBuilder updateQuery = queryFactory.newUpdateQueryBuilder();
 		
-		queryBuilder.select("c.id").from("Customer c").where("c.firstName like :name").setParameter("name", "James").execute().getUniqueResult();
+		selectQuery.select("c.id").from("Customer c").where("c.firstName like :name").setParameter("name", "James").execute().getUniqueResult();
 		
-		SqlUpdateQueryBuilder newUpdateQueryBuilder = queryFactory.newUpdateQueryBuilder();
-		newUpdateQueryBuilder.update("Customer c2")
-												.setFieldValue("FIRSTNAME", "Gab")
-												.setFieldValue("LASTNAME", "Gue")
-												.where("c2.id in  :ids")
-												.setParameter("ids", queryBuilder).build();
+		updateQuery.update("Customer c2")
+				.setFieldValue("FIRSTNAME", "Gabriel")
+				.setFieldValue("LASTNAME", "Guerrero")
+				.where("c2.id in  :ids")
+				.setParameter("ids", selectQuery).build();
 		
-		System.out.println("sql ="+newUpdateQueryBuilder.getBuiltQuery());
-		int updateCount = newUpdateQueryBuilder.setParameter("ids", queryBuilder).execute().getUpdateCount();
+		System.out.println("sql: "+updateQuery.getBuiltQuery());
+		int updateCount = updateQuery.setParameter("ids", selectQuery).execute().getUpdateCount();
 		assertThat(updateCount,greaterThan(1));
 		
 		//execute the query again to ensure none more andrews are left
-		assertNull(queryBuilder.execute().getUniqueResult());
+		assertNull(selectQuery.execute().getUniqueResult());
 	}
 	@Test
 	public void testDelete() throws Exception{
 		
 		SqlSelectQueryBuilder queryBuilder = queryFactory.newSelectQueryBuilder();
+		SqlDeleteQueryBuilder deleteQuery = queryFactory.newDeleteQueryBuilder();
 		
 		Integer count = (Integer) queryBuilder.select("count(*)").from("Customer c").where("c.firstName like :name").setParameter("name", "Bob").build().execute().getUniqueResult();
-		queryBuilder.select("c.id").from("Customer c").where("c.firstName like :name").setParameter("name", "James").execute().getUniqueResult();
+
+		queryBuilder.select("c.id").from("Customer c").where("c.firstName like :name").setParameter("name", "James");
 		
-		SqlDeleteQueryBuilder deleteQuery = queryFactory.newDeleteQueryBuilder().deleteFrom("Customer c2")
-		.where("c2.id in :ids")
-		.setParameter("ids", queryBuilder.select("c.id")).build();
-		
+		deleteQuery.deleteFrom("Customer c2").where("c2.id in :ids").setParameter("ids", queryBuilder).build();
 		
 		int updateCount = deleteQuery.execute().getUpdateCount();
+		
 		assertThat(updateCount,lessThan(count));
 		Integer count2 = (Integer) queryBuilder.select("count(*)").build().execute().getUniqueResult();
 		assertThat(count2,lessThan(count));

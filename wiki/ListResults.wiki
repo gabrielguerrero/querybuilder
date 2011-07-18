@@ -1,0 +1,44 @@
+= List Result =
+There are two basic list results  List of Maps and List of Beans 
+
+Lets suppose we have a query like 
+
+{{{
+ SqlSelectQueryBuilder queryBuilder = queryFactory.newSelectQueryBuilder();
+ queryBuilder.select("*").from("Customer");
+ queryBuilder.build();
+ System.out.println(queryBuilder.getBuiltQuery());
+}}} 
+
+Now lets see how to get the results
+
+== List of Maps ==
+{{{
+ List<Map<String,?>> resultList = queryBuilder.execute().getResultList();
+ 
+ // This returns a list of maps, find the value of each column by using 
+ //the column name as a key on the map, if you use an alias in your select the alias will be the key on the map
+ for (Map<String, ?> map : resultList) {
+ 	System.out.println(map);
+ }
+ //This will print something like:
+ //{ID=0, FIRSTNAME=Laura, CITY=Dallas, STREET=429 Seventh Av., LASTNAME=Steel}
+ //{ID=1, FIRSTNAME=Susanne, CITY=Olten, STREET=366 - 20th Ave., LASTNAME=King}
+ //{ID=2, FIRSTNAME=Anne, CITY=Lyon, STREET=20 Upland Pl., LASTNAME=Miller}
+}}}
+
+== List of Beans ==
+To create a list of beans you just need to implement  ListSqlResultTransformer class, this should be your default way of handling results
+{{{
+List<Customer> result = queryBuilder.execute().getResult(new ListSqlResultTransformer<Customer>(){
+		@Override
+		public Customer getValueObject(ResultSet rs) throws SQLException {
+			Customer customer = new Customer();
+			customer.setId(rs.getLong("ID"));
+			customer.setFirstName(rs.getString("FIRSTNAME"));
+			customer.setLastName(rs.getString("LASTNAME"));
+			customer.setCity(rs.getString("CITY"));
+			customer.setStreet(rs.getString("STREET"));
+			return customer;
+		}});
+}}}

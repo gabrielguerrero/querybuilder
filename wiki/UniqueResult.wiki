@@ -1,0 +1,34 @@
+= Unique Result =
+This is useful when you expect result set that have only one result, or you just want to read the first row
+
+
+== Default Unique Result Transformation ==
+The getUniqueResult, returns 
+ * if the column count is equal to 1 return the value of the first column of the first row
+ * if the column count is greater than 1 returns a  Map of the first row, with the values of all the columns using the colum names as keys
+ For example
+ Get the number of customers
+{{{
+ Integer count = (Integer) queryBuilder.select("count(*)").from("Customer c").execute().getUniqueResult();
+}}}
+Get customer with id:123
+{{{
+ Map customer = (Map) queryBuilder.select("*").from("Customer c").where("c.id = :id").setParameter("id",123).execute().getUniqueResult();
+}}}
+
+== Get Bean from Unique result
+
+queryBuilder.select("*").from("Customer c").where("c.id = :id").setParameter("id",123);
+Customer customer = queryBuilder.execute().getUniqueResult(new ValueObjectFromResultSet<Customer>() {
+
+	public Customer getValueObject(ResultSet rs) throws SQLException {
+		Customer customer = new Customer();
+		customer.setId(rs.getLong("ID"));
+		customer.setFirstName(rs.getString("FIRSTNAME"));
+		customer.setLastName(rs.getString("LASTNAME"));
+		customer.setCity(rs.getString("CITY"));
+		customer.setStreet(rs.getString("STREET"));
+		return customer;
+	}
+	
+});

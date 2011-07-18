@@ -1,0 +1,88 @@
+= Map Results =
+This kind of transformation has many uses like grouping results in a list by a key or joining the results of two queries, you will probably find that the sometimes the only way to improve the performance of a query is splitting the query in smaller ones and joining the results later.
+
+== Default Result Mapping  ==
+The getMapResult(), creates a map where the key is the first column, and the value depends on number of columns in the result set,
+ * if the result has only one column the value is Boolean.TRUE, 
+ * if it has 2 columns the second column is the value 
+ * if it has more than 2 columns, the value is a map with the rest of the columns values
+
+A few examples
+
+The next example returns a map where the key is customer.id and the value is a map with the rest of the columns
+{{{
+SqlSelectQueryBuilder queryBuilder = queryFactory.newSelectQueryBuilder();
+ queryBuilder.select("*").from("Customer"); 
+ Map result = queryBuilder.execute().getMapResult();
+}}}
+The next example returns a map where the key is customer.id and the value is Boolean.TRUE 
+useful for checking if an id exist
+{{{
+ SqlSelectQueryBuilder queryBuilder = queryFactory.newSelectQueryBuilder();
+ queryBuilder.select("c.id").from("Customer"); 
+ Map<Long,Boolean> result = queryBuilder.execute().getMapResult();
+}}} 
+The next example returns a map where the key is customer.id and the value is a Integer/Long depending or you db
+{{{
+ SqlSelectQueryBuilder queryBuilder = queryFactory.newSelectQueryBuilder();
+ //calculate the amount of money each customer has spend
+ queryBuilder.select("i.customerId, sum(it.cost)")
+             .from("Invoice i","inner join Item it on it.invoiceId=i.id")
+             .groupBy("i.customerId");
+ 
+ Map<Long,Float> result = queryBuilder.execute().getResultMap();
+}}}
+
+== Group Result in a List by a key ==
+In this example we need to group the invoices by customer id
+{{{
+ SqlSelectQueryBuilder queryBuilder = queryFactory.newSelectQueryBuilder();
+ queryBuilder.select("*").from("Invoice as i");
+ queryBuilder.build();
+ System.out.println(queryBuilder.getBuiltQuery());
+ 
+ Map<Long, List<Invoice>> result = queryBuilder.execute().getResult(new MapSqlResultTransformerGroupedByKey<Long, Invoice>() {
+ 
+ 	@Override
+ 	public Invoice getBeanForRow(ResultSet rs) throws SQLException{
+ 		Invoice invoice = new Invoice();
+ 		invoice.setId(rs.getLong("ID"));
+ 		invoice.setCustomerId(rs.getLong("CUSTOMERID"));
+ 		invoice.setTotal(rs.getLong("TOTAL"));
+ 		return invoice;
+ 	}
+ 
+ 	@Override
+ 	public Long getRowId(ResultSet rs) throws SQLException{
+ 		return rs.getLong("CUSTOMERID");
+ 	}
+ });
+}}}
+
+== Create a Map of Beans ==
+In this case the map key is the customer.id and the value is a Customer bean
+{{{
+ SqlSelectQueryBuilder queryBuilder = queryFactory.newSelectQueryBuilder();
+ queryBuilder.select("*").from("Customer");
+ queryBuilder.build();
+ System.out.println(queryBuilder.getBuiltQuery());
+ 
+ Map<Long, Customer> result = queryBuilder.execute().getResult(new MapSqlResultTransformer<Long, Customer>() {
+			
+	@Override
+	public Customer getValueObject(ResultSet rs) throws SQLException {
+		Customer customer = new Customer();
+		customer.setId(rs.getLong("ID"));
+		customer.setFirstName(rs.getString("FIRSTNAME"));
+		customer.setLastName(rs.getString("LASTNAME"));
+		customer.setCity(rs.getString("CITY"));
+		customer.setStreet(rs.getString("STREET"));
+		return customer;
+	}
+	
+	@Override
+	public Long getIdObject(ResultSet rs) throws SQLException {
+		return rs.getLong("ID");
+	}
+ });
+}}}

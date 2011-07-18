@@ -1,0 +1,22 @@
+=Delete Queries==
+
+Here are a few example of delete queries, is similar to other queries
+== Simple Delete ==
+{{{
+ SqlDeleteQueryBuilder deleteQuery = queryFactory.newDeleteQueryBuilder();
+ 
+ deleteQuery.deleteFrom("Customer c").where("c.id = :id").setParameter("id", 123).build();
+ 
+ int updateCount = deleteQuery.execute().getUpdateCount();
+}}}
+== Delete From SubSelect ==
+{{{
+ SqlSelectQueryBuilder queryBuilder = queryFactory.newSelectQueryBuilder();
+ SqlDeleteQueryBuilder deleteQuery = queryFactory.newDeleteQueryBuilder();
+ 
+ queryBuilder.select("c.id").from("Customer c").where("c.firstName like :name").setParameter("name", "James");
+ 
+ deleteQuery.deleteFrom("Customer c2").where("c2.id in :ids").setParameter("ids", queryBuilder).build();
+ 
+ int updateCount = deleteQuery.execute().getUpdateCount();
+}}}

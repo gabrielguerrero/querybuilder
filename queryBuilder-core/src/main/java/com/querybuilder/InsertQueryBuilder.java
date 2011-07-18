@@ -31,16 +31,16 @@ public abstract class InsertQueryBuilder<E extends InsertQueryBuilder<?, ?>, T e
 		super(queryExecutor);
 	}
 
-	public InsertQueryBuilder<E,T> insertInto(String table) {
+	public E insertInto(String table) {
 		queryChanged();
 		this.table = table;
-		return this;
+		return (E) this;
 	}
 	
-	public InsertQueryBuilder<E,T> setValuesFrom(SelectQueryBuilder valuesFrom){
+	public E setValuesFrom(SelectQueryBuilder valuesFrom){
 		queryChanged();
 		this.valuesFrom = valuesFrom;
-		return this;
+		return (E) this;
 	}
 	
 	public String getInsertTable() {

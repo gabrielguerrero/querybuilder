@@ -1,0 +1,33 @@
+=Insert Queries==
+
+Here are a few example of insert queries, is similar to other queries
+== Simple Insert ==
+{{{
+ SqlInsertQueryBuilder newInsertQueryBuilder = queryFactory.newInsertQueryBuilder();
+ 
+ newInsertQueryBuilder.insertInto("CustomerBackUp")
+ .setFieldValue("ID", 55)
+ .setFieldValue("FIRSTNAME", "Gabriel")
+ .setFieldValue("LASTNAME", "Guerrero")
+ .build();
+ 
+ System.out.println("sql: "+ newInsertQueryBuilder.getBuiltQuery());
+ // sql: insert into Customer (ID,FIRSTNAME,LASTNAME) values (:ID,:FIRSTNAME,:LASTNAME) 
+ int updateCount = newInsertQueryBuilder.execute().getUpdateCount();
+}}}
+
+== Batch Insert == 
+{{{
+SqlSelectQueryBuilder selectQuery = queryFactory.newSelectQueryBuilder();
+SqlInsertQueryBuilder insertQuery = queryFactory.newInsertQueryBuilder();
+
+selectQuery.select("c.id, c.firstName, c.lastName").from("Customer c");
+
+insertQuery.insertInto("Customer").fields("ID","FIRSTNAME","LASTNAME").setValuesFrom(selectQuery);
+
+insertQuery.build();
+
+System.out.println("sql: "+ newInsertQueryBuilder.getBuiltQuery());
+ //insert into CustomerBackUp (ID,FIRSTNAME,LASTNAME) (select c.id,c.firstName,c.lastName from Customer c)
+int updateCount = insertQuery.execute().getUpdateCount();
+}}}

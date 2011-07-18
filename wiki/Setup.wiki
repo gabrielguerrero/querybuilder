@@ -10,7 +10,9 @@ For maven users just add this dependency to your pom.xml
 }}}	
 
 To start using the library you just need to create an implementation of ConnectionProvider, in this class you should create a java.sql.Connection object from a connection pool, or connection per request or session, or whatever logic you use to control conections,
-after you have defined this class you can create a SqlQueryFactory , the recomend way is that to create you ConnectionProvider implementation and use guice or spring or your favorite DI library to create the SqlQueryFactory, but for this example I will do the wiring manually
+after you have defined this class you can create a SqlQueryFactory .
+
+The recomend way is that to create you ConnectionProvider implementation and use guice or spring or your favorite DI library to create the SqlQueryFactory, but for this example I will do the wiring manually
 
 {{{
  public class MyConnectionProvider implements ConnectionProvider {

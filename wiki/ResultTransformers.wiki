@@ -1,0 +1,3 @@
+= Result Transformers =
+
+Result transformers are use to transform the result of you queries from a ResultSet to a List of Beans or json or whatever you need

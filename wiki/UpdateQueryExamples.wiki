@@ -1,0 +1,34 @@
+= Update Query Examples =
+
+Here are a few example of update queries, is similar to other queries
+
+== Simple Update Query ==
+{{{
+ SqlUpdateQueryBuilder updateQuery = queryFactory.newUpdateQueryBuilder();
+ updateQuery.update("Customer c")
+		 .setFieldValue("FIRSTNAME", "Gabriel")
+		 .setFieldValue("LASTNAME", "Guerrero")
+		 .where("c.firstName like :name")
+		 .setParameter("name", "Andrew");
+ updateQuery.build();
+ System.out.println("sql: "+ updateQuery.getBuiltQuery());
+ //sql: update Customer c set FIRSTNAME = :FIRSTNAME,LASTNAME = :LASTNAME where (c.firstName like :name)
+ int updateCount = updateQuery.execute().getUpdateCount();
+}}} 
+== Update Query With SubSelect==
+{{{
+ SqlSelectQueryBuilder selectQuery = queryFactory.newSelectQueryBuilder();
+ SqlUpdateQueryBuilder updateQuery = queryFactory.newUpdateQueryBuilder();
+ 
+ selectQuery.select("c.id").from("Customer c").where("c.firstName like :name").setParameter("name", "James");
+ 
+ updateQuery.update("Customer c2")
+ 		.setFieldValue("FIRSTNAME", "Gabriel")
+ 		.setFieldValue("LASTNAME", "Guerrero")
+ 		.where("c2.id in  :ids")
+ 		.setParameter("ids", selectQuery).build();
+ 
+ System.out.println("sql: "+updateQuery.getBuiltQuery());
+ //sql: update Customer c2 set FIRSTNAME = :FIRSTNAME,LASTNAME = :LASTNAME where (c2.id in  (select c.id from Customer c where (c.firstName like :name)))
+ int updateCount = updateQuery.setParameter("ids", selectQuery).execute().getUpdateCount();
+}}}

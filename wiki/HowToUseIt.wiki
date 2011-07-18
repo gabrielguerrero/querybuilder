@@ -1,10 +1,13 @@
-
 = How to use it? = 
 
-After you have done the setup, using the classes should be very easy, the classes where designed with the method chaining in mind to make it easy to read and make it look like normal sql so is easy to understand
+After you have done the [Setup setup], using the classes should be very easy, the classes where designed with the method chaining in mind to make it easy to read and make it look like normal sql so is easy to understand
 but if you dont like method chaining you can also use it without depends on your coding style
 
-Lets say you want to create a query like "select * from Customer c where c.id = :id " where ":id" is a named parameter
+Lets say you want to create a query like 
+{{{
+select * from Customer c where c.id = :id 
+}}} 
+where ":id" is a named parameter
 
 {{{
  //First create the builder
@@ -12,8 +15,8 @@ Lets say you want to create a query like "select * from Customer c where c.id = 
  //Then create the query 
  queryBuilder.select("*").from("Customer c").where("c.id = :id");
  queryBuilder.setParameter("id",123);
- // the next step optional the execute() will call build() if it hasn't been call,
- // but is useful if you want to call getBuiltQuery() method
+ // the next step is optional the execute() will call build() if it hasn't been called,
+ // but is useful if you want to call the getBuiltQuery() method
  queryBuilder.build();
  // execute the query
  List<Map<String,?>> resultList = queryBuilder.execute().getResultList();
@@ -24,6 +27,10 @@ Each type of query is divided in clauses for example the select query has select
  * clauseName(part1, part2,part3): this clears the collection and adds each of the arguments as a part, it also return the querybuilder so you can easily method chain them
  for example:
  {{{
+//using method chaining
+queryBuilder.select("p.id","p.name").from("Person p","inner join Department d on p.departamentId=d.id").where("p.salary >= :salary ");
+
+//no method chaining
  queryBuilder.select("p.id","p.name");
  //is only important to separate the fields if you plan to remove some of them later 
  //otherwise you could use select("p.id,p.name"),this also apply for 
@@ -33,15 +40,26 @@ Each type of query is divided in clauses for example the select query has select
  }}}
  * clauseName(): returns the parts collection for the clause, usually needed to add/remove/change a part of a clause
  
- for example: 
- {{{  
-// we have a query to list the personnel of a company, and we want to add a search 
-// by department and a salary search, also the result should be paginated
+ For example: 
  
+ Adding parts
+ {{{
+ queryBuilder.from().add("inner join Department d on p.departmentId=d.id");
+ queryBuilder.where().addAnd("d.name like :departmentName");
+ }}}
+ Removing parts
+ {{{
+  queryBuilder.from().remove("inner join Job j on p.jobId=j.id");//be sure to use the exact same string
+  //queryBuilder.from().remove(1);//we could also remove by position
+ }}}
+ 
+= Full example of a  Paginated Search =
+Notice how in the next code we add a join and extra where conditions depending on if search parameters are present, also after the main query is executed we change it to a counter query and reuse it to get the total count 
+ {{{  
  public PagedResult search(QueryParameters queryParameters) {
   SqlSelectQueryBuilder queryBuilder = queryFactory.newSelectQueryBuilder();
   //basic query
-  queryBuilder.select("p.id,p.name,p.salary,j.jobDescription")
+  queryBuilder.select("p.id, p.name, p.salary, j.jobDescription")
   				.from("Person p","inner join Job j on p.jobId=j.id");
   
   if (queryParameters.getDepartmentNameSearch()!=null){
@@ -66,7 +84,7 @@ Each type of query is divided in clauses for example the select query has select
   List<Map<String,?>> result = queryBuilder.execute().getResultList();
   
   //calculate total count
-  queryBuilder.select("count(p.id)");
+  queryBuilder.select("count(p.id)");// this replaces select("p.id, p.name, p.salary, j.jobDescription")
   queryBuilder.clearFirstAndMaxResultLimits();
   // we can remove the inner join to the Job table because is not needed in the count
   queryBuilder.from().remove("inner join Job j on p.jobId=j.id");//be sure to use the exact same string
@@ -84,3 +102,5 @@ Each type of query is divided in clauses for example the select query has select
  
  }}}
  
+= Tranforming Results = 
+Till now we have only show you how to get the results as a list of maps, but the result can be anything you want from a simple list of beans to protobuf, json or a cvs file see [ListResults Result Transformers] to learn how to
