@@ -26,18 +26,18 @@ import org.junit.Test;
 
 import com.querybuilder.QueryBuilder;
 import com.querybuilder.QueryCondition;
-import com.querybuilder.WhereClause;
+import com.querybuilder.ConditionsClause;
 
 public class WhereClauseTest {
 
 	QueryBuilder queryBuilder;
-	private WhereClause whereClause;
+	private ConditionsClause whereClause;
 	
 
 	@Before
 	public void init(){
 		queryBuilder = mock(QueryBuilder.class);
-		whereClause = new WhereClause<QueryBuilder>(queryBuilder);
+		whereClause = new ConditionsClause<QueryBuilder>(queryBuilder);
 	}
 	
 
@@ -78,7 +78,7 @@ public class WhereClauseTest {
 		whereClause.addOr("0");
 		whereClause.addOr("1");
 		whereClause.addOr("2");
-		WhereClause whereClause2 = new WhereClause<QueryBuilder>(queryBuilder);
+		ConditionsClause whereClause2 = new ConditionsClause<QueryBuilder>(queryBuilder);
 		whereClause2.addOr("3");
 		whereClause2.addOr("4");
 		whereClause2.addOr("5");
@@ -178,7 +178,7 @@ public class WhereClauseTest {
 		whereClause.addOr("0");
 		whereClause.addOr("1");
 		whereClause.addOr("2");
-		WhereClause whereClause2 = new WhereClause<QueryBuilder>(queryBuilder);
+		ConditionsClause whereClause2 = new ConditionsClause<QueryBuilder>(queryBuilder);
 		whereClause2.addOr("3");
 		whereClause2.addOr("4");
 		whereClause2.addOr("5");

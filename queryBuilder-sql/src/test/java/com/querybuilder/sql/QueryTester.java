@@ -344,7 +344,9 @@ public class QueryTester extends DBTestBase{
 	@Test
 	public void testSqlJoins() throws Exception{
 		SqlSelectQueryBuilder queryBuilder = queryFactory.newSelectQueryBuilder();
-		queryBuilder.select("it.*").from("Customer as c","inner join Invoice as i on i.customerId = c.id","inner join Item it on it.invoiceId = i.id")
+		queryBuilder.select("it.*").from("Customer as c",
+				                         "inner join Invoice as i on i.customerId = c.id",
+				                         "inner join Item it on it.invoiceId = i.id")
 									.where().addAnd("c.firstName like :name").end().setParameter("name","Andrew");
 		queryBuilder.build();
 		System.out.println(queryBuilder.getBuiltQuery());
@@ -435,7 +437,7 @@ public class QueryTester extends DBTestBase{
 		SqlSelectQueryBuilder selectQuery = queryFactory.newSelectQueryBuilder();
 		SqlUpdateQueryBuilder updateQuery = queryFactory.newUpdateQueryBuilder();
 		
-		selectQuery.select("c.id").from("Customer c").where("c.firstName like :name").setParameter("name", "James").execute().getUniqueResult();
+		selectQuery.select("c.id").from("Customer c").where("c.firstName like :name").setParameter("name", "James");
 		
 		updateQuery.update("Customer c2")
 				.setFieldValue("FIRSTNAME", "Gabriel")

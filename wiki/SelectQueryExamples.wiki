@@ -1,0 +1,173 @@
+= Select Queries =
+Here are a few examples of select queries, the go from simple to complex ones, if you need to see examples of results transformations go to [ListResults Results Transformations]
+
+== Simple Select query ==
+{{{
+select * from Customer where c.id = :id
+}}}
+{{{
+ //First create the builder
+ SqlSelectQueryBuilder queryBuilder = queryFactory.newSelectQueryBuilder();
+ //Then create the query 
+ queryBuilder.select("*").from("Customer c").where("c.id = :id");
+ queryBuilder.setParameter("id",123);
+ // the next step is optional the execute() will call build() if it hasn't been called,
+ // but is useful if you want to call the getBuiltQuery() method
+ queryBuilder.build();
+ // execute the query
+ List<Map<String,?>> resultList = queryBuilder.execute().getResultList();
+}}}
+== Using method chaning for a more complex query ==
+  
+{{{
+select it.* from Customer as c 
+            inner join Invoice as i on i.customerId = c.id 
+            inner join Item it on it.invoiceId = i.id 
+            where (it.cost >= 30 or it.cost <= 100) and (c.firstName like :name) 
+}}}
+{{{
+ SqlSelectQueryBuilder queryBuilder = queryFactory.newSelectQueryBuilder();
+ queryBuilder.select("it.*").from("Customer as c",
+                                  "inner join Invoice as i on i.customerId = c.id",
+                                  "inner join Item it on it.invoiceId = i.id")
+                            .where()
+                                 .addAnd("it.cost >= 30 or it.cost <= 100")
+                                 .addAnd("c.firstName like :name")
+                            .end()
+                            .setParameter("name","Andrew");
+}}}
+== Same as previous query no method chaning  ==
+  
+{{{
+select it.* from Customer as c 
+            inner join Invoice as i on i.customerId = c.id 
+            inner join Item it on it.invoiceId = i.id 
+            where (it.cost >= 30 or it.cost <= 100) and (c.firstName like :name) 
+}}}
+{{{
+ SqlSelectQueryBuilder queryBuilder = queryFactory.newSelectQueryBuilder();
+ queryBuilder.select("it.*");
+ queryBuilder.from("Customer as c");
+ queryBuilder.from().add("inner join Invoice as i on i.customerId = c.id");
+ queryBuilder.from().add("inner join Item it on it.invoiceId = i.id");
+ queryBuilder.where().addAnd("it.cost >= 30 or it.cost <= 100");
+ queryBuilder.where().addAnd("c.firstName like :name");
+ queryBuilder.setParameter("name","Andrew");									
+}}}
+== Count query ==
+{{{
+select count(*) from Customer c where c.firstName like : name
+}}}
+{{{
+Integer count = (Integer) queryBuilder.select("count(*)").from("Customer c")
+                                                         .where("c.firstName like :name")
+                                                         .setParameter("name", "Bob")
+                                                         .build()
+                                                         .execute()
+                                                         .getUniqueResult();
+
+}}}	
+== Query with Subselect ==
+{{{
+select * from Customer c2 where c2.id in (select c.id from Customer c where c.firstName like :name)
+}}}
+{{{
+ SqlSelectQueryBuilder query = queryFactory.newSelectQueryBuilder();
+ SqlDeleteQueryBuilder subquery = queryFactory.newDeleteQueryBuilder();
+ 
+ subquery.select("c.id").from("Customer c").where("c.firstName like :name").setParameter("name", "Bob");
+ 
+ query.select("*").from("Customer c2").where("c2.id in :ids").setParameter("ids", subquery);
+ 
+ List<Map<String,?>> resultList = query.execute().getResultList();
+}}}
+== Paginated Search ==
+Notice how in the next code we add a join and extra where conditions depending on the presence of search parameters, also after the main query is executed we change it to a counter query and reuse it to get the total count 
+ {{{  
+ public PagedResult search(QueryParameters queryParameters) {
+  SqlSelectQueryBuilder queryBuilder = queryFactory.newSelectQueryBuilder();
+  //basic query
+  queryBuilder.select("p.id, p.name, p.salary, j.jobDescription")
+              .from("Person p","inner join Job j on p.jobId=j.id");
+  
+  if (queryParameters.getDepartmentNameSearch()!=null){
+    // if we have a department search add a join to department and a extra where condition 
+    queryBuilder.from().add("inner join Department d on p.departmentId=d.id");
+    queryBuilder.where().addAnd("d.name like :departmentName");
+    queryBuilder.setParameter("departmentName",queryParameters.getDepartmentNameSearch());
+  }
+  if (queryParameters.getSalaryGreaterThan()!=null){
+    // in this case no extra join is needed, just add an extra where condition
+    queryBuilder.where().addAnd("p.salary >= :salary");
+    queryBuilder.setParameter("salary",queryParameters.getSalaryGreaterThan());
+  }
+  //set the pagination limits
+  queryBuilder.setFirstResults(queryParameters.getStartRow());
+  queryBuilder.setMaxResults(queryParameters.getNumberOfRows());
+  //execute query
+  queryBuilder.build();
+  if (log.isDebugEnabled()){
+    log.debug("sql:"+queryBuilder.getBuiltQuery()+" parameters:"+queryBuilder.getParameters());
+  }
+  List<Map<String,?>> result = queryBuilder.execute().getResultList();
+  
+  //calculate total count
+  queryBuilder.select("count(p.id)");// this replaces select("p.id, p.name, p.salary, j.jobDescription")
+  queryBuilder.clearFirstAndMaxResultLimits();
+  // we can remove the inner join to the Job table because is not needed in the count
+  queryBuilder.from().remove("inner join Job j on p.jobId=j.id");//be sure to use the exact same string
+  //queryBuilder.from().remove(1);//we could also remove by position
+  
+  //execute query
+  queryBuilder.build();
+  Integer totalCount = (Integer) queryBuilder.execute().getUniqueResult();
+  
+  //now retunr your paged result
+  PagedResult pagedResult = new PagedResult(result,totalCount);
+  return pagedResult;
+ }
+ 
+ }}}
+== Improved Paginated Search ==
+This version is similar to the previous except that we will execute the count before the main query so we can avoid the execution of the main query if the count is 0
+{{{  
+ public PagedResult search(QueryParameters queryParameters) {
+  SqlSelectQueryBuilder queryBuilder = queryFactory.newSelectQueryBuilder();
+  //basic query
+  queryBuilder.select("count(p.id)").from("Person p");
+  
+  if (queryParameters.getDepartmentNameSearch()!=null){
+    // if we have a department search add a join to department and a extra where condition 
+    queryBuilder.from().add("inner join Department d on p.departmentId=d.id");
+    queryBuilder.where().addAnd("d.name like :departmentName");
+    queryBuilder.setParameter("departmentName",queryParameters.getDepartmentNameSearch());
+  }
+  if (queryParameters.getSalaryGreaterThan()!=null){
+    // in this case no extra join is needed, just add an extra where condition
+    queryBuilder.where().addAnd("p.salary >= :salary");
+    queryBuilder.setParameter("salary",queryParameters.getSalaryGreaterThan());
+  }
+
+  //execute query
+  queryBuilder.build();
+  if (log.isDebugEnabled()){
+    log.debug("sql:"+queryBuilder.getBuiltQuery()+" parameters:"+queryBuilder.getParameters());
+  }
+  Integer totalCount = (Integer) queryBuilder.execute().getUniqueResult();
+  if (totalCount==0)
+        return new PagedResult(new ArrayList(),0);
+  //execute main query
+  queryBuilder.select("p.id, p.name, p.salary, j.jobDescription");//replace the select count(p.id)
+  queryBuilder.from().add(1,"inner join Job j on p.jobId=j.id");// add to position 1, 0 is "Person p"
+  //set the pagination limits
+  queryBuilder.setFirstResults(queryParameters.getStartRow());
+  queryBuilder.setMaxResults(queryParameters.getNumberOfRows());
+  
+  List<Map<String,?>> result = queryBuilder.execute().getResultList();
+  
+  //now return your paged result
+  PagedResult pagedResult = new PagedResult(result,totalCount);
+  return pagedResult;
+ }
+ 
+ }}}									

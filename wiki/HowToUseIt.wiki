@@ -16,7 +16,7 @@ where ":id" is a named parameter
  queryBuilder.select("*").from("Customer c").where("c.id = :id");
  queryBuilder.setParameter("id",123);
  // the next step is optional the execute() will call build() if it hasn't been called,
- // but is useful if you want to call the getBuiltQuery() method
+ // but is useful if you want to call the getBuiltQuery() method (you'll see it later)
  queryBuilder.build();
  // execute the query
  List<Map<String,?>> resultList = queryBuilder.execute().getResultList();
@@ -54,24 +54,24 @@ queryBuilder.select("p.id","p.name").from("Person p","inner join Department d on
  }}}
  
 = Full example of a  Paginated Search =
-Notice how in the next code we add a join and extra where conditions depending on if search parameters are present, also after the main query is executed we change it to a counter query and reuse it to get the total count 
+Notice how in the next code we add a join and extra where conditions depending on the presence of search parameters, also after the main query is executed we change it to a counter query and reuse it to get the total count 
  {{{  
  public PagedResult search(QueryParameters queryParameters) {
   SqlSelectQueryBuilder queryBuilder = queryFactory.newSelectQueryBuilder();
   //basic query
   queryBuilder.select("p.id, p.name, p.salary, j.jobDescription")
-  				.from("Person p","inner join Job j on p.jobId=j.id");
+                .from("Person p","inner join Job j on p.jobId=j.id");
   
   if (queryParameters.getDepartmentNameSearch()!=null){
-  	// if we have a department search add a join to department and a extra where condition 
-  	queryBuilder.from().add("inner join Department d on p.departmentId=d.id");
-  	queryBuilder.where().addAnd("d.name like :departmentName");
-  	queryBuilder.setParameter("departmentName",queryParameters.getDepartmentNameSearch());
+    // if we have a department search add a join to department and a extra where condition 
+    queryBuilder.from().add("inner join Department d on p.departmentId=d.id");
+    queryBuilder.where().addAnd("d.name like :departmentName");
+    queryBuilder.setParameter("departmentName",queryParameters.getDepartmentNameSearch());
   }
   if (queryParameters.getSalaryGreaterThan()!=null){
-  	// in this case no extra join is needed, just add an extra where condition
-  	queryBuilder.where().addAnd("p.salary >= :salary");
-  	queryBuilder.setParameter("salary",queryParameters.getSalaryGreaterThan());
+    // in this case no extra join is needed, just add an extra where condition
+    queryBuilder.where().addAnd("p.salary >= :salary");
+    queryBuilder.setParameter("salary",queryParameters.getSalaryGreaterThan());
   }
   //set the pagination limits
   queryBuilder.setFirstResults(queryParameters.getStartRow());
@@ -79,7 +79,7 @@ Notice how in the next code we add a join and extra where conditions depending o
   //execute query
   queryBuilder.build();
   if (log.isDebugEnabled()){
-  	log.debug("sql:"+queryBuilder.getBuiltQuery()+" parameters:"+queryBuilder.getParameters());
+    log.debug("sql:"+queryBuilder.getBuiltQuery()+" parameters:"+queryBuilder.getParameters());
   }
   List<Map<String,?>> result = queryBuilder.execute().getResultList();
   
@@ -94,7 +94,7 @@ Notice how in the next code we add a join and extra where conditions depending o
   queryBuilder.build();
   Integer totalCount = (Integer) queryBuilder.execute().getUniqueResult();
   
-  //now retunr your paged result
+  //now return your paged result
   PagedResult pagedResult = new PagedResult(result,totalCount);
   return pagedResult;
  }

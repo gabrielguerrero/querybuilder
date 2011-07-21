@@ -17,35 +17,35 @@ package com.querybuilder;
 
 import java.util.LinkedList;
 
-public class WhereClause<T extends QueryBuilder> {
+public class ConditionsClause<T extends QueryBuilder> {
 	private static final String OR_STR = " or ";
 	private static final String AND_STR = " and ";
 	private LinkedList<QueryCondition> conditions = new LinkedList<QueryCondition>();
 	private T parentStatement;
 
 	@SuppressWarnings("unchecked")
-	public WhereClause(QueryBuilder statement) {
+	public ConditionsClause(QueryBuilder statement) {
 		this.parentStatement = (T) statement;
 	}
 
-	public WhereClause<T> addAll(WhereClause<T> whereClause) {
+	public ConditionsClause<T> addAll(ConditionsClause<T> whereClause) {
 		this.conditions.addAll(whereClause.getConditions());
 		return this;
 	}
 
-	public WhereClause<T> addAnd(String condition) {
+	public ConditionsClause<T> addAnd(String condition) {
 		if (condition != null)
 			conditions.add(QueryCondition.newAndCondition(condition));
 		return this;
 	}
 
-	public WhereClause<T> addCondition(QueryCondition condition) {
+	public ConditionsClause<T> addCondition(QueryCondition condition) {
 		if (condition != null && !condition.isEmpty())
 			conditions.add(condition);
 		return this;
 	}
 
-	public WhereClause<T> addOr(String condition) {
+	public ConditionsClause<T> addOr(String condition) {
 		if (condition != null)
 			conditions.add(QueryCondition.newOrCondition(condition));
 		return this;
@@ -63,26 +63,26 @@ public class WhereClause<T extends QueryBuilder> {
 		return conditions.isEmpty();
 	}
 
-	public WhereClause<T> clear() {
+	public ConditionsClause<T> clear() {
 		conditions.clear();
 		return this;
 	}
 
-	public WhereClause<T> removeAndCondition(String condition) {
+	public ConditionsClause<T> removeAndCondition(String condition) {
 		return removeCondition(QueryCondition.newAndCondition(condition));
 	}
 
-	public WhereClause<T> removeCondition(QueryCondition condition) {
+	public ConditionsClause<T> removeCondition(QueryCondition condition) {
 		if (condition != null && !condition.isEmpty())
 			conditions.remove(condition);
 		return this;
 	}
 
-	public WhereClause<T> removeOrCondition(String condition) {
+	public ConditionsClause<T> removeOrCondition(String condition) {
 		return removeCondition(QueryCondition.newOrCondition(condition));
 	}
 
-	protected WhereClause<T> setConditions(LinkedList<QueryCondition> conditions) {
+	protected ConditionsClause<T> setConditions(LinkedList<QueryCondition> conditions) {
 		this.conditions = conditions;
 		return this;
 	}

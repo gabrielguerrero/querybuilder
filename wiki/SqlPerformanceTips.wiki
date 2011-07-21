@@ -1,0 +1,15 @@
+=Sql Performance Tips=
+This are a few performance tips you should have in mind
+
+== In dinamic queries use only the joins you need ==
+Often I have seen code for reports or paginated pages where they do all the joins from the beginning and dinamically add the where conditions, inspite of the joins are only needed for some of the optional where conditions
+
+Don't use select *
+Aways specify the fields you need, tables evolve over time and what initially had 10 fields in the future could grow to 30 , plus more joins could be added to the querie fetching thoses fields too
+
+Use prepared statements
+they are faster
+good for stadistics
+protect from sql injection
+
+Split the query if is to heavy in two or more and join results 

@@ -27,7 +27,7 @@ public abstract class UpdateQueryBuilder<E extends UpdateQueryBuilder<?, ?>, T e
 	private String table;
 	
 	private FieldsCollection<E> fields = new FieldsCollection<E>(this);
-	private WhereClause<E> conditions = new WhereClause<E>(this);
+	private ConditionsClause<E> conditions = new ConditionsClause<E>(this);
 	
 	private SelectQueryBuilder<SelectQueryBuilder<?,?>, T> valuesFrom;
 	
@@ -45,7 +45,7 @@ public abstract class UpdateQueryBuilder<E extends UpdateQueryBuilder<?, ?>, T e
 		return table;
 	}
 	
-	public WhereClause<E> where() {
+	public ConditionsClause<E> where() {
 		queryChanged();
 		return conditions;
 	}

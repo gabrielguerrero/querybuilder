@@ -24,7 +24,7 @@ public abstract class DeleteQueryBuilder<E extends DeleteQueryBuilder<?, ?>, T e
 
 	private String table;
 	
-	private WhereClause<E> conditions = new WhereClause<E>(this);
+	private ConditionsClause<E> conditions = new ConditionsClause<E>(this);
 	
 	public DeleteQueryBuilder(T queryExecutor) {
 		super(queryExecutor);
@@ -40,7 +40,7 @@ public abstract class DeleteQueryBuilder<E extends DeleteQueryBuilder<?, ?>, T e
 		return table;
 	}
 	
-	public WhereClause<E> where() {
+	public ConditionsClause<E> where() {
 		queryChanged();
 		return conditions;
 	}

@@ -27,7 +27,8 @@ public abstract class SelectQueryBuilder<E extends SelectQueryBuilder<?, ?>, T e
 	private int firstResults = -1;
 
 	private int maxResults = -1;
-	private WhereClause<E> conditions = new WhereClause<E>(this);
+	private ConditionsClause<E> whereConditions = new ConditionsClause<E>(this);
+	private ConditionsClause<E> havingConditions = new ConditionsClause<E>(this);
 	private FieldsCollection<E> fields = new FieldsCollection<E>(this);
 	private StatementClause<E> groupByFields = new StatementClause<E>(this);
 	private OrderByClause<E> orderByFields = new OrderByClause<E>(this);
@@ -58,6 +59,10 @@ public abstract class SelectQueryBuilder<E extends SelectQueryBuilder<?, ?>, T e
 		if (!groupBy().isEmpty()) {
 			queryWriter.append(" group by ");
 			groupBy().joinBy(',', queryWriter);
+		}
+		if (!having().isEmpty()) {
+			queryWriter.append(" having ");
+			queryWriter.append(having().toString());
 		}
 		if (!orderBy().isEmpty()) {
 			queryWriter.append(" order by ");
@@ -180,9 +185,9 @@ public abstract class SelectQueryBuilder<E extends SelectQueryBuilder<?, ?>, T e
 		return (E) this;
 	}
 
-	public WhereClause<E> where() {
+	public ConditionsClause<E> where() {
 		queryChanged();
-		return conditions;
+		return whereConditions;
 	}
 
 	public E where(String... conditions) {
@@ -191,6 +196,19 @@ public abstract class SelectQueryBuilder<E extends SelectQueryBuilder<?, ?>, T e
 			where().addAnd(conditions[i]);
 		}
 		return where().end();
+	}
+	
+	public ConditionsClause<E> having() {
+		queryChanged();
+		return havingConditions;
+	}
+	
+	public E having(String... conditions) {
+		having().clear();
+		for (int i = 0; i < conditions.length; i++) {
+			having().addAnd(conditions[i]);
+		}
+		return having().end();
 	}
 
 	@Override
@@ -204,7 +222,7 @@ public abstract class SelectQueryBuilder<E extends SelectQueryBuilder<?, ?>, T e
 		E queryBuilder = newQueryBuilder();
 		queryBuilder.setFields(fields);
 		queryBuilder.setJoins(joins);
-		queryBuilder.setConditions(conditions);
+		queryBuilder.setConditions(whereConditions);
 		queryBuilder.setGroupByFields(groupByFields);
 		queryBuilder.setOrderByFields(orderByFields);
 		queryBuilder.setParameters(getParameters());
@@ -214,8 +232,8 @@ public abstract class SelectQueryBuilder<E extends SelectQueryBuilder<?, ?>, T e
 		return queryBuilder;
 	}
 
-	private void setConditions(WhereClause<?> conditions) {
-		this.conditions = (WhereClause<E>) conditions;
+	private void setConditions(ConditionsClause<?> conditions) {
+		this.whereConditions = (ConditionsClause<E>) conditions;
 	}
 
 	private void setFields(FieldsCollection<?> fields) {
