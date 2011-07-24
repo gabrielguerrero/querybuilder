@@ -1,0 +1,100 @@
+= Protobuf Results =
+
+This is a few examples of how to use protobuf in case you dont know what it is go to http://code.google.com/p/protobuf/ 
+
+We want to tranform the customer list to protobuf, so we need a proto file like 
+{{{
+package querybuilder;
+
+option java_package = "com.querybuilder.test";
+option java_outer_classname = "CustomerProto";
+
+message Customer {
+  optional int64 id = 1;
+  optional string firstName = 2;
+  optional string lastName = 3;
+  optional string street = 4;
+}
+message CustomerList {
+  repeated Customer customers = 1;
+} 
+}}}
+
+Generate the protobuf classes 
+
+First an example without streaming 
+{{{
+ SqlSelectQueryBuilder queryBuilder = queryFactory.newSelectQueryBuilder();
+ queryBuilder.select("*").from("Customer");
+ queryBuilder.build();
+ System.out.println(queryBuilder.getBuiltQuery());
+ 
+ CustomerProto.CustomerList list = queryBuilder.execute().getResult(new SqlResultTransformer<CustomerProto.CustomerList>() {
+     CustomerProto.CustomerList.Builder list;
+     
+     public void init(ResultSet rs) throws SQLException {
+         list = CustomerProto.CustomerList.newBuilder();
+     }
+     
+     public void processRow(ResultSet rs) throws SQLException {
+             CustomerProto.Customer.Builder customer =  CustomerProto.Customer.newBuilder();
+             customer.setId(rs.getLong("ID"));
+             customer.setFirstName(rs.getString("FIRSTNAME"));
+             customer.setLastName(rs.getString("LASTNAME"));
+             customer.setStreet(rs.getString("STREET"));
+             
+             list.addCustomers(customer.build());
+     }
+     
+     public CustomerProto.CustomerList getResult() {
+         return list.build();
+     }
+ });
+}}}
+
+Now an example using streaming, this is always the recomended way for huge result sets , to stream protobuf you have to write the size of the message first, so you can later use it to read it
+{{{
+ SqlSelectQueryBuilder queryBuilder = queryFactory.newSelectQueryBuilder();
+ queryBuilder.select("*").from("Customer");
+ queryBuilder.build();
+ System.out.println(queryBuilder.getBuiltQuery());
+ 
+ final FileOutputStream outputStream = new FileOutputStream(new File("target//temp3.proto"));
+ queryBuilder.execute().getResult(new SqlResultTransformer<Object>() {
+     
+     public void init(ResultSet rs) throws SQLException {}
+     
+     public void processRow(ResultSet rs) throws SQLException {
+         try {
+             CustomerProto.Customer.Builder customer =  CustomerProto.Customer.newBuilder();
+             customer.setId(rs.getLong("ID"));
+             customer.setFirstName(rs.getString("FIRSTNAME"));
+             customer.setLastName(rs.getString("LASTNAME"));
+             customer.setStreet(rs.getString("STREET"));
+             
+             byte[] byteArray = customer.build().toByteArray();
+             outputStream.write(byteArray.length);
+             outputStream.write(byteArray);
+         } catch (IOException e) {
+             throw new QueryBuilderException("Exception building protobuf result",e);
+         }
+     }
+     
+     public Object getResult() {return null;}
+ });
+ outputStream.flush();
+ outputStream.close();
+}}}
+Now reading the protobuf message of the stream will be like 
+{{{
+ FileInputStream in = new FileInputStream(new File("target//temp3.proto"));
+ int size;
+ byte[] byteArray;
+
+ while ((size = in.read()) != -1) {
+     byteArray = new byte[size];
+     in.read(byteArray);
+     CustomerProto.Customer customer = CustomerProto.Customer.parseFrom(byteArray);
+     System.out.println(customer);
+ }
+}}}

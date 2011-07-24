@@ -5,7 +5,7 @@ For maven users just add this dependency to your pom.xml
 <dependency>
 	<groupId>com.querybuilder</groupId>
 	<artifactId>querybuilder-sql</artifactId>
-	<version>1.2-SNAPSHOT</version>
+	<version>1.4</version>
 </dependency>
 }}}	
 

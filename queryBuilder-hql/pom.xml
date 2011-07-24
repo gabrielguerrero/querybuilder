@@ -20,16 +20,15 @@
   <parent>
     <artifactId>querybuilder</artifactId>
     <groupId>com.querybuilder</groupId>
-    <version>1.2-SNAPSHOT</version>
+    <version>1.4</version>
   </parent>
   <groupId>com.querybuilder</groupId>
   <artifactId>querybuilder-hql</artifactId>
-  <version>1.2-SNAPSHOT</version>
   <dependencies>
   	<dependency>
   		<groupId>com.querybuilder</groupId>
   		<artifactId>querybuilder-core</artifactId>
-  		<version>1.2-SNAPSHOT</version>
+  		<version>${project.version}</version>
   	</dependency>
   	<dependency>
 			<groupId>org.hibernate</groupId>

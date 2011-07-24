@@ -19,34 +19,43 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.lessThan;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
-import static org.mockito.Matchers.contains;
-import static org.mockito.Matchers.eq;
 
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.PrintWriter;
 import java.sql.Connection;
 import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
+import javax.sql.rowset.CachedRowSet;
+
+import org.codehaus.jackson.JsonEncoding;
+import org.codehaus.jackson.JsonFactory;
+import org.codehaus.jackson.JsonGenerator;
+import org.codehaus.jackson.JsonNode;
+import org.codehaus.jackson.JsonParser;
+import org.codehaus.jackson.map.ObjectMapper;
 import org.junit.Before;
 import org.junit.Test;
 
-import com.querybuilder.InsertQueryBuilder;
-import com.querybuilder.sql.ConnectionProvider;
-import com.querybuilder.sql.ListSqlResultTransformer;
-import com.querybuilder.sql.MapSqlResultTransformer;
-import com.querybuilder.sql.MapSqlResultTransformerGroupedByKey;
-import com.querybuilder.sql.SqlDeleteQueryBuilder;
-import com.querybuilder.sql.SqlQueryFactory;
-import com.querybuilder.sql.SqlResultTransformer;
-import com.querybuilder.sql.SqlSelectQueryBuilder;
-import com.querybuilder.sql.SqlUpdateQueryBuilder;
+import com.querybuilder.QueryBuilderException;
+import com.querybuilder.test.CustomerProto;
+import com.querybuilder.test.CustomerProto.CustomerList;
 
 public class QueryTester extends DBTestBase{
 
@@ -92,6 +101,21 @@ public class QueryTester extends DBTestBase{
 		assertNotNull(map.get("CITY"));
 		assertNotNull(map.get("STREET"));
 		assertNotNull(map.get("LASTNAME"));
+	}
+	@Test
+	public void testCachedRowSetResult() throws Exception{
+		SqlSelectQueryBuilder queryBuilder = queryFactory.newSelectQueryBuilder();
+		queryBuilder.select("*").from("Customer");
+		queryBuilder.build();
+		System.out.println(queryBuilder.getBuiltQuery());
+		CachedRowSet resultList = queryBuilder.execute().getResult(new CachedRowSetTransformer());
+		resultList.next();
+		assertThat(resultList.size(), greaterThan(1));
+		assertNotNull(resultList.getString("ID"));
+		assertNotNull(resultList.getString("FIRSTNAME"));
+		assertNotNull(resultList.getString("CITY"));
+		assertNotNull(resultList.getString("STREET"));
+		assertNotNull(resultList.getString("LASTNAME"));
 	}
 	@Test
 	public void testMapResult() throws Exception{
@@ -186,7 +210,263 @@ public class QueryTester extends DBTestBase{
 		assertNotNull(entry.getLastName());
 		assertNotNull(entry.getStreet());
 	}
+	@Test
+	public void testSqlFileResultTransformer() throws Exception{
+		SqlSelectQueryBuilder queryBuilder = queryFactory.newSelectQueryBuilder();
+		queryBuilder.select("*").from("Customer");
+		queryBuilder.build();
+		System.out.println(queryBuilder.getBuiltQuery());
+		final FileOutputStream fileOutputStream = new FileOutputStream(new File("target//temp.cvs"));
+		queryBuilder.execute().getResult(new SqlResultTransformer<Object>() {
+			
+			private PrintWriter writer;
+
+			public void init(ResultSet rs) throws SQLException {
+					writer = new PrintWriter(fileOutputStream); 
+					writer.write("ID");
+					writer.write(',');
+					writer.write("FIRSTNAME");
+					writer.write(',');
+					writer.write("LASTNAME");
+					writer.write(',');
+					writer.write("CITY");
+					writer.write(',');
+					writer.write("STREET");
+					writer.write('\n');
+			}
+			
+			public void processRow(ResultSet rs) throws SQLException {
+				writer.write(rs.getString("ID"));
+				writer.write(',');
+				writer.write(rs.getString("FIRSTNAME"));
+				writer.write(',');
+				writer.write(rs.getString("LASTNAME"));
+				writer.write(',');
+				writer.write(rs.getString("CITY"));
+				writer.write(',');
+				writer.write(rs.getString("STREET"));
+				writer.write('\n');
+			}
+			
+			public Object getResult() {
+				writer.flush();
+				return null;
+			}
+		});
+		fileOutputStream.close();
+		
+		File inFile = new File("temp.cvs");
+	    BufferedReader br = new BufferedReader(new InputStreamReader(new FileInputStream(inFile)));
+	    String headers = br.readLine();
+	     String readLine = br.readLine();
+	     String[] fields = readLine.split("\\,");
+		assertThat(fields.length, equalTo(5));
+		assertNotNull(fields[0]);
+		assertNotNull(fields[1]);
+		assertNotNull(fields[2]);
+		assertNotNull(fields[3]);
+		assertNotNull(fields[4]);
+	}
 	
+	@Test
+	public void testSqlCvsResultTransformer() throws Exception{
+		SqlSelectQueryBuilder queryBuilder = queryFactory.newSelectQueryBuilder();
+		queryBuilder.select("*").from("Customer");
+		queryBuilder.build();
+		System.out.println(queryBuilder.getBuiltQuery());
+		FileOutputStream fileOutputStream = new FileOutputStream(new File("target//temp2.cvs"));
+		queryBuilder.execute().getResult(new CvsResultTransfomer(fileOutputStream));
+		fileOutputStream.flush();
+		fileOutputStream.close();
+		
+		File inFile = new File("temp2.cvs");
+		System.out.println(inFile.getAbsolutePath());
+		
+	    BufferedReader br = new BufferedReader(new InputStreamReader(new FileInputStream(inFile)));
+	    String headers = br.readLine();
+	     String readLine = br.readLine();
+	     String[] fields = readLine.split("\\,");
+		assertThat(fields.length, equalTo(5));
+		assertNotNull(fields[0]);
+		assertNotNull(fields[1]);
+		assertNotNull(fields[2]);
+		assertNotNull(fields[3]);
+		assertNotNull(fields[4]);
+	}
+	@Test
+	public void testSqlJsonResultTransformer() throws Exception{
+		SqlSelectQueryBuilder queryBuilder = queryFactory.newSelectQueryBuilder();
+		queryBuilder.select("*").from("Customer");
+		queryBuilder.build();
+		System.out.println(queryBuilder.getBuiltQuery());
+		FileOutputStream fileOutputStream = new FileOutputStream(new File("target//temp.json"));
+		queryBuilder.execute().getResult(new JsonResultTransformer(fileOutputStream));
+		fileOutputStream.flush();
+		fileOutputStream.close();
+		
+		File inFile = new File("target//temp.json");
+		ObjectMapper mapper = new ObjectMapper();
+		JsonFactory f = mapper.getJsonFactory();
+		JsonParser jsonParser = f.createJsonParser(inFile);
+		JsonNode readValueAsTree = jsonParser.readValueAsTree();
+		JsonNode jsonNode = readValueAsTree.get(0);
+		System.out.println(inFile.getAbsolutePath());
+		
+		assertFalse(jsonNode.path("ID").isNull());
+		assertFalse(jsonNode.path("FIRSTNAME").isNull());
+		assertFalse(jsonNode.path("STREET").isNull());
+	}
+	@Test
+	public void testSqlCustomeJsonResultTransformer() throws Exception{
+		SqlSelectQueryBuilder queryBuilder = queryFactory.newSelectQueryBuilder();
+		queryBuilder.select("*").from("Customer");
+		queryBuilder.build();
+		System.out.println(queryBuilder.getBuiltQuery());
+		final FileOutputStream outputStream = new FileOutputStream(new File("target//temp2.json"));
+		queryBuilder.execute().getResult(new SqlResultTransformer<Object>() {
+
+			public void init(ResultSet rs) throws SQLException {
+				JsonFactory f = new JsonFactory();
+				ResultSetMetaData metaData = rs.getMetaData();
+				int columnCount = metaData.getColumnCount();
+				try {
+					JsonGenerator g = f.createJsonGenerator(outputStream,JsonEncoding.UTF8);
+					g.writeStartArray();
+					while(rs.next()){
+						g.writeStartObject();
+						g.writeFieldName("id");
+						g.writeObject(rs.getLong("ID"));
+						g.writeFieldName("firstName");
+						g.writeObject(rs.getString("FIRSTNAME"));
+						g.writeFieldName("street");
+						g.writeObject(rs.getString("STREET"));
+						g.writeEndObject();
+					}
+					g.writeEndArray();
+					g.flush();
+				} catch (IOException e) {
+					throw new QueryBuilderException("Exception building Json Result",e);
+				}
+			}
+
+			public void processRow(ResultSet rs) throws SQLException {}
+
+			public Object getResult() {return null;}
+		});
+		outputStream.flush();
+		outputStream.close();
+		
+		File inFile = new File("target//temp2.json");
+		ObjectMapper mapper = new ObjectMapper();
+		JsonFactory f = mapper.getJsonFactory();
+		JsonParser jsonParser = f.createJsonParser(inFile);
+		JsonNode readValueAsTree = jsonParser.readValueAsTree();
+		JsonNode jsonNode = readValueAsTree.get(0);
+		System.out.println(inFile.getAbsolutePath());
+		
+		assertFalse(jsonNode.path("id").isNull());
+		assertFalse(jsonNode.path("firstName").isNull());
+		assertFalse(jsonNode.path("street").isNull());
+	}
+	@Test
+	public void testSqlProtobufResultTransformer() throws Exception{
+		SqlSelectQueryBuilder queryBuilder = queryFactory.newSelectQueryBuilder();
+		queryBuilder.select("*").from("Customer");
+		queryBuilder.build();
+		System.out.println(queryBuilder.getBuiltQuery());
+		final FileOutputStream outputStream = new FileOutputStream(new File("target//temp3.proto"));
+		queryBuilder.execute().getResult(new SqlResultTransformer<Object>() {
+			
+			public void init(ResultSet rs) throws SQLException {}
+			
+			public void processRow(ResultSet rs) throws SQLException {
+				try {
+					CustomerProto.Customer.Builder customer =  CustomerProto.Customer.newBuilder();
+					customer.setId(rs.getLong("ID"));
+					customer.setFirstName(rs.getString("FIRSTNAME"));
+					customer.setLastName(rs.getString("LASTNAME"));
+					customer.setStreet(rs.getString("STREET"));
+					
+					byte[] byteArray = customer.build().toByteArray();
+					outputStream.write(byteArray.length);
+					outputStream.write(byteArray);
+				} catch (IOException e) {
+					throw new QueryBuilderException("Exception building protobuf result",e);
+				}
+			}
+			
+			public Object getResult() {return null;}
+		});
+		outputStream.flush();
+		outputStream.close();
+		
+		FileInputStream in = new FileInputStream(new File("target//temp3.proto"));
+		int size;
+		byte[] byteArray;
+
+//        while ((size = in.read()) != -1) {
+//        	byteArray = new byte[size];
+//        	in.read(byteArray);
+//        	CustomerProto.Customer customer = CustomerProto.Customer.parseFrom(byteArray);
+//        	System.out.println(customer);
+//        }
+		size = in.read();
+		byteArray = new byte[size];
+		in.read(byteArray);
+		CustomerProto.Customer customer = CustomerProto.Customer.parseFrom(byteArray);
+		size = in.read();
+		byteArray = new byte[size];
+		in.read(byteArray);
+		com.querybuilder.test.CustomerProto.Customer customer2 = CustomerProto.Customer.parseFrom(byteArray);
+		size = in.read();
+		byteArray = new byte[size];
+		in.read(byteArray);
+		com.querybuilder.test.CustomerProto.Customer customer3 = CustomerProto.Customer.parseFrom(byteArray);
+		
+		assertThat(customer.getId(),equalTo(0L));
+		assertThat(customer.getFirstName(),equalTo("Laura"));
+		assertThat(customer.getLastName(),equalTo("Steel"));
+	}
+	@Test
+	public void testSqlProtobuf2ResultTransformer() throws Exception{
+		SqlSelectQueryBuilder queryBuilder = queryFactory.newSelectQueryBuilder();
+		queryBuilder.select("*").from("Customer");
+		queryBuilder.build();
+		System.out.println(queryBuilder.getBuiltQuery());
+		CustomerProto.CustomerList list = queryBuilder.execute().getResult(new SqlResultTransformer<CustomerProto.CustomerList>() {
+			CustomerProto.CustomerList.Builder list;
+			
+			public void init(ResultSet rs) throws SQLException {
+				list = CustomerProto.CustomerList.newBuilder();
+			}
+			
+			public void processRow(ResultSet rs) throws SQLException {
+					CustomerProto.Customer.Builder customer =  CustomerProto.Customer.newBuilder();
+					customer.setId(rs.getLong("ID"));
+					customer.setFirstName(rs.getString("FIRSTNAME"));
+					customer.setLastName(rs.getString("LASTNAME"));
+					customer.setStreet(rs.getString("STREET"));
+					
+					list.addCustomers(customer.build());
+			}
+			
+			public CustomerProto.CustomerList getResult() {
+				return list.build();
+			}
+		});
+		final FileOutputStream outputStream = new FileOutputStream(new File("target//temp4.proto"));
+		outputStream.write(list.toByteArray());
+		outputStream.flush();
+		outputStream.close();
+		FileInputStream fileInputStream = new FileInputStream(new File("target//temp4.proto"));
+		
+		CustomerList customerList = CustomerProto.CustomerList.parseFrom(fileInputStream);
+		com.querybuilder.test.CustomerProto.Customer customer = customerList.getCustomers(0);
+		
+		assertThat(customer.getId(),equalTo(0L));
+		assertThat(customer.getFirstName(),equalTo("Laura"));
+		assertThat(customer.getLastName(),equalTo("Steel"));
+	}
 	@Test
 	public void testListSqlResultTransformer() throws Exception{
 		SqlSelectQueryBuilder queryBuilder = queryFactory.newSelectQueryBuilder();
@@ -472,39 +752,45 @@ public class QueryTester extends DBTestBase{
 	}
 	
 //	public PagedResult search(QueryParameters queryParameters) {
-//		SqlSelectQueryBuilder queryBuilder = queryFactory.newSelectQueryBuilder();
-//		//basic query
-//		 queryBuilder.select("p.*,j.*").from("Person p","inner join Job j on p.jobId=j.id");
-//		 
-//		 if (queryParameters.getDepartmentNameSearch()!=null){
-//		 	// if we have a department search add a join to department and a extra where condition 
-//		 	queryBuilder.from().add("inner join Department d on p.departmentId=d.id");
-//		 	queryBuilder.where().addAnd("d.name like :departmentName");
-//		 	queryBuilder.setParameter("departmentName",queryParameters.getDepartmentNameSearch());
+//		  SqlSelectQueryBuilder queryBuilder = queryFactory.newSelectQueryBuilder();
+//		  //basic query
+//		  queryBuilder.select("p.id, p.name, p.salary, j.jobDescription")
+//		                                .from("Person p","inner join Job j on p.jobId=j.id");
+//		  
+//		  if (queryParameters.getDepartmentNameSearch()!=null){
+//		        // if we have a department search add a join to department and a extra where condition 
+//		        queryBuilder.from().add("inner join Department d on p.departmentId=d.id");
+//		        queryBuilder.where().addAnd("d.name like :departmentName");
+//		        queryBuilder.setParameter("departmentName",queryParameters.getDepartmentNameSearch());
+//		  }
+//		  if (queryParameters.getSalaryGreaterThan()!=null){
+//		        // in this case no extra join is needed, just add an extra where condition
+//		        queryBuilder.where().addAnd("p.salary >= :salary");
+//		        queryBuilder.setParameter("salary",queryParameters.getSalaryGreaterThan());
+//		  }
+//		  //set the pagination limits
+//		  queryBuilder.setFirstResults(queryParameters.getStartRow());
+//		  queryBuilder.setMaxResults(queryParameters.getNumberOfRows());
+//		  //execute query
+//		  queryBuilder.build();
+//		  if (log.isDebugEnabled()){
+//		        log.debug("sql:"+queryBuilder.getBuiltQuery()+" parameters:"+queryBuilder.getParameters());
+//		  }
+//		  List<Map<String,?>> result = queryBuilder.execute().getResultList();
+//		  
+//		  //calculate total count
+//		  queryBuilder.select("count(p.id)");// this replaces select("p.id, p.name, p.salary, j.jobDescription")
+//		  queryBuilder.clearFirstAndMaxResultLimits();
+//		  // we can remove the inner join to the Job table because is not needed in the count
+//		  queryBuilder.from().remove("inner join Job j on p.jobId=j.id");//be sure to use the exact same string
+//		  //queryBuilder.from().remove(1);//we could also remove by position
+//		  
+//		  //execute query
+//		  queryBuilder.build();
+//		  Integer totalCount = (Integer) queryBuilder.execute().getUniqueResult();
+//		  
+//		  //now return your paged result
+//		  PagedResult pagedResult = new PagedResult(result,totalCount);
+//		  return pagedResult;
 //		 }
-//		 if (queryParameters.getSalaryGreaterThan()!=null){
-//		 	// in this case no extra join is needed, just add an extra where condition
-//		 	queryBuilder.where().addAnd("p.salary >= :salary");
-//		 	queryBuilder.setParameter("salary",queryParameters.getSalaryGreaterThan());
-//		 }
-//		 //set the pagination limits
-//		 queryBuilder.setFirstResults(queryParameters.getStartRow());
-//		 queryBuilder.setMaxResults(queryParameters.getNumberOfRows());
-//		 //execute query
-//		 queryBuilder.build();
-//		 List<Map<String,?>> result = queryBuilder.execute().getResultList();
-//		 
-//		 //calculate total count
-//		 queryBuilder.select("count(p.id)");
-//		 queryBuilder.clearFirstAndMaxResultLimits();
-//		 // we can remove the inner join to the Job table because is not needed in the count
-//		 queryBuilder.from().remove("inner join Job j on p.jobId=j.id");//be sure to use the exact same string, you can also use position
-//		 //execute query
-//		 queryBuilder.build();
-//		 Integer totalCount = (Integer) queryBuilder.execute().getUniqueResult();
-//		 
-//		 //now retunr your paged result
-//		 PagedResult pagedResult = new PagedResult(result,totalCount);
-//		 return pagedResult;
-//	}
 }

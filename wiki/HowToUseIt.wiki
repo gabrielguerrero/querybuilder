@@ -53,7 +53,7 @@ queryBuilder.select("p.id","p.name").from("Person p","inner join Department d on
   //queryBuilder.from().remove(1);//we could also remove by position
  }}}
  
-= Full example of a  Paginated Search =
+== Full example of a  Paginated Search ==
 Notice how in the next code we add a join and extra where conditions depending on the presence of search parameters, also after the main query is executed we change it to a counter query and reuse it to get the total count 
  {{{  
  public PagedResult search(QueryParameters queryParameters) {
@@ -102,5 +102,5 @@ Notice how in the next code we add a join and extra where conditions depending o
  
  }}}
  
-= Tranforming Results = 
+== Tranforming Results == 
 Till now we have only show you how to get the results as a list of maps, but the result can be anything you want from a simple list of beans to protobuf, json or a cvs file see [ListResults Result Transformers] to learn how to

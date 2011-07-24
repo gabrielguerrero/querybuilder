@@ -1,15 +1,23 @@
-=Sql Performance Tips=
+= Sql Performance Tips =
 This are a few performance tips you should have in mind
 
 == In dinamic queries use only the joins you need ==
-Often I have seen code for reports or paginated pages where they do all the joins from the beginning and dinamically add the where conditions, inspite of the joins are only needed for some of the optional where conditions
+Often I have seen code for reports or paginated pages where they do all the joins from the beginning and dinamically add the where conditions, inspite of the joins are only needed for some of the optional where conditions, less joins generally means faster queries be sure to  only add the joins are needed
 
-Don't use select *
-Aways specify the fields you need, tables evolve over time and what initially had 10 fields in the future could grow to 30 , plus more joins could be added to the querie fetching thoses fields too
+== Don't use select `*` ==
+Aways specify the fields you need, tables evolve over time and what initially had 10 fields in the future could grow to 30 , plus more joins could be added to the query fetching those fields too
 
-Use prepared statements
-they are faster
-good for stadistics
-protect from sql injection
+== Use prepared statements ==
+Why ?
+ * They protect you from sql injection if you use parameters
+ * They are faster, normally dbs precompile an cache prepared statement reusing the execution access plan
+ * Better for db stats, if you use prepared statements the db can use the sql as a key to group the queries, which can tell you stuff like oracle top ten queries which can show which ones are the more expensive queries used in the db  
 
-Split the query if is to heavy in two or more and join results 
+== Consider splitting a query if it is too heavy in two or more and them join results==
+If you are having trouble with a very heavy query and you have not found a way to optimize it, the best way is to split the query in more simple queries that use less joins and later combine the results of the queries, for example is you need to add more than one on-to-many joins in your query is better to split it and have two queries where each query has one one-to-many join  ,if you put two or more one-to-many joins in a single sql you will create a cartesian product of the selected tables,  [MapResults transform the result to of one of the queries to a Map]  is very useful for this cases
+
+== Use Result Streaming on Reports ==
+Generaly report queries return large result sets and they can not be paginated like a search because you intend to use all the data to create a PDF,CVS,Excel etc, the problem is that if you try load the entire result of the report in the server memory you can cause a OutOfMemoryError specially when we are talking about millions of records, 
+the best thing to do is to stream the result to file in the disk or db, so every row you read should be writen directly to a file or db row  instead of been added to a list or any kind of java container see the [ResultStreaming Result Streaming] for an examples
+
+You can also do a count query to check how many results an if they are few you can process it on memory and return directly to the user, otherwise create a parallel process to create a file in the server using streaming and send the file later to the user by email for example

@@ -5,6 +5,7 @@
   * [ListResults List Of Map/Beans]
   * [MapResults Map of Map/Beans]
   * [UniqueResult Unique Results]
+  * [CustomResultTransformers Custom Result Transformers]  
   * [ResultStreaming Result Streaming]
   * [JsonResults JSON Results]
   * [ProtobufResults Protobuf Results]

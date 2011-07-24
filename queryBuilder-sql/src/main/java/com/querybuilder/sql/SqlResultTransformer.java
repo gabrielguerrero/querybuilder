@@ -20,7 +20,7 @@ import java.sql.SQLException;
 
 public interface SqlResultTransformer<T> {
 
-	public void init(ResultSet result) throws SQLException;
+	public void init(ResultSet rs) throws SQLException;
 	
 	public void processRow(ResultSet rs) throws SQLException;
 	

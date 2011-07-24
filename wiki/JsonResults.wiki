@@ -1,0 +1,81 @@
+=Json Results=
+In this case I will be using the http://jackson.codehaus.org library to transform the results to json but you should be able to create a custom result transformer for any other library
+
+I prefer Jackson library because it allows you to stream json, to use it you will need to add this to your project
+
+{{{
+ <dependency>
+         <groupId>org.codehaus.jackson</groupId>
+         <artifactId>jackson-core-asl</artifactId>
+         <version>1.6.0</version>
+         <optional>true</optional>
+  </dependency>
+ <dependency>
+         <groupId>org.codehaus.jackson</groupId>
+         <artifactId>jackson-mapper-asl</artifactId>
+         <version>1.6.0</version>
+         <optional>true</optional>
+  </dependency>
+}}}
+
+
+The provided json transfomer uses streaming so you can use in your servlet output or to a socket, if you do I recommend to gzip the result using something like GZIPOutputStream or tomcat or jetty gzip config.
+For example
+{{{
+ SqlSelectQueryBuilder queryBuilder = queryFactory.newSelectQueryBuilder();
+ queryBuilder.select("*").from("Customer");
+ queryBuilder.build();
+ System.out.println(queryBuilder.getBuiltQuery());
+ 
+ FileOutputStream fileOutputStream = new FileOutputStream(new File("target//temp.json"));
+ queryBuilder.execute().getResult(new JsonResultTransformer(fileOutputStream));
+ fileOutputStream.flush();
+ fileOutputStream.close();
+}}}
+that will create something like :
+{{{
+[{"ID":0,"FIRSTNAME":"Laura","LASTNAME":"Steel","STREET":"429 Seventh Av.","CITY":"Dallas"},
+{"ID":1,"FIRSTNAME":"Susanne","LASTNAME":"King","STREET":"366 - 20th Ave.","CITY":"Olten"},...
+}}}
+
+Or you can create a custom one like the following, notice that for this case I put all the logic in the init, which is some times useful for handling non sql exceptions
+{{{
+ SqlSelectQueryBuilder queryBuilder = queryFactory.newSelectQueryBuilder();
+ queryBuilder.select("*").from("Customer");
+ queryBuilder.build();
+ System.out.println(queryBuilder.getBuiltQuery());
+
+ final FileOutputStream outputStream = new FileOutputStream(new File("target//temp2.json"));
+ queryBuilder.execute().getResult(new SqlResultTransformer<Object>() {
+
+     public void init(ResultSet rs) throws SQLException {
+         JsonFactory f = new JsonFactory();
+         ResultSetMetaData metaData = rs.getMetaData();
+         int columnCount = metaData.getColumnCount();
+         try {
+             JsonGenerator g = f.createJsonGenerator(outputStream,JsonEncoding.UTF8);
+             g.writeStartArray();
+             while(rs.next()){
+                 g.writeStartObject();
+                 g.writeFieldName("id");
+                 g.writeObject(rs.getLong("ID"));
+                 g.writeFieldName("firstName");
+                 g.writeObject(rs.getString("FIRSTNAME"));
+                 g.writeFieldName("street");
+                 g.writeObject(rs.getString("STREET"));
+                 g.writeEndObject();
+             }
+             g.writeEndArray();
+             g.flush();
+         } catch (IOException e) {
+             throw new QueryBuilderException("Exception building Json Result",e);
+         }
+     }
+
+     public void processRow(ResultSet rs) throws SQLException {}
+
+     public Object getResult() {return null;}
+ });
+ outputStream.flush();
+ outputStream.close();
+}}}
