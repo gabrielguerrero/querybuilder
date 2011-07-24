@@ -3,11 +3,11 @@
 For maven users just add this dependency to your pom.xml
 {{{
 <dependency>
-	<groupId>com.querybuilder</groupId>
-	<artifactId>querybuilder-sql</artifactId>
-	<version>1.4</version>
+    <groupId>com.querybuilder</groupId>
+    <artifactId>querybuilder-sql</artifactId>
+    <version>1.5-SNAPSHOT</version>
 </dependency>
-}}}	
+}}} 
 
 To start using the library you just need to create an implementation of ConnectionProvider, in this class you should create a java.sql.Connection object from a connection pool, or connection per request or session, or whatever logic you use to control conections,
 after you have defined this class you can create a SqlQueryFactory .
@@ -16,19 +16,19 @@ The recomend way is that to create you ConnectionProvider implementation and use
 
 {{{
  public class MyConnectionProvider implements ConnectionProvider {
- 	
- 	public Connection get() {
- 		try {
- 			// here you put the logic to create,or reuse a connection from a conection pool 
- 			//or any logic you have like connection per request or per session
- 			.
- 			.
- 			.
- 			return connection;
- 		} catch (Exception e) {
- 			throw new RuntimeException(e);
- 		}
- 	}
+    
+    public Connection get() {
+        try {
+            // here you put the logic to create,or reuse a connection from a conection pool 
+            //or any logic you have like connection per request or per session
+            .
+            .
+            .
+            return connection;
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
  }
  
  .
@@ -43,4 +43,4 @@ The recomend way is that to create you ConnectionProvider implementation and use
  queryBuilder.build();
  System.out.println(queryBuilder.getBuiltQuery());
  List<Map<String,?>> resultList = queryBuilder.execute().getResultList();
-}}}	 
+}}}  
