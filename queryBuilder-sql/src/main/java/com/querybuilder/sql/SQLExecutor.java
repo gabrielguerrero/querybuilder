@@ -36,6 +36,11 @@ import com.querybuilder.QueryBuilder;
 import com.querybuilder.QueryBuilderException;
 import com.querybuilder.QueryExecutor;
 import com.querybuilder.SelectQueryBuilder;
+import com.querybuilder.sql.transform.GenericListSqlResultTransformer;
+import com.querybuilder.sql.transform.GenericMapSqlResultTransformer;
+import com.querybuilder.sql.transform.GenericValueObjectFromResultSet;
+import com.querybuilder.sql.transform.SqlResultTransformer;
+import com.querybuilder.sql.transform.ValueObjectFromResultSet;
 
 @SuppressWarnings({ "unchecked", "rawtypes" })
 public class SQLExecutor extends QueryExecutor {
@@ -44,15 +49,19 @@ public class SQLExecutor extends QueryExecutor {
 	int updateCount;
 	private PreparedStatement statement;
 	private ResultSet resultSet;
+	private ConnectionProvider connectionProvider;
 
-	protected SQLExecutor(Connection connection) {
+	public SQLExecutor(Connection connection) {
 		this.connection = connection;
+	}
+	public SQLExecutor(ConnectionProvider connectionProvider) {
+		this.connectionProvider = connectionProvider;
 	}
 
 	protected ResultSet execute() {
 		boolean isUpdateQuery = false;
-		statement = null;
-		resultSet = null;
+		//ensure no results or statements were left open
+		close();
 
 		String sql = getQueryBuilder().getBuiltQuery();
 		try {
@@ -77,7 +86,7 @@ public class SQLExecutor extends QueryExecutor {
 			//then the rest of the parameters
 			sql = sql.replaceAll("\\:\\w+", "?");
 			
-			statement = connection.prepareStatement(sql);
+			statement = (connection!=null)? connection.prepareStatement(sql) : connectionProvider.get().prepareStatement(sql);
 			// now set the real values to the statements in the right order by setting them in the same order of the :variableName
 			Pattern p = Pattern.compile("\\:(\\w+)");
 			Matcher m = p.matcher(getQueryBuilder().getBuiltQuery());
@@ -137,8 +146,10 @@ public class SQLExecutor extends QueryExecutor {
 
 	private void closeResultSet() {
 		try {
-			if (resultSet != null)
+			if (resultSet != null){
 				resultSet.close();
+				resultSet=null;
+			}	
 		} catch (SQLException e) {
 			throw new QueryBuilderException("Error closing resultset", e);
 		}
@@ -147,15 +158,20 @@ public class SQLExecutor extends QueryExecutor {
 
 	private void closeStatement() {
 		try {
-			if (statement != null)
+			if (statement != null){
 				statement.close();
+				statement = null;
+			}	
 		} catch (SQLException e) {
 			throw new QueryBuilderException("Error closing statement", e);
 		}
 	}
 	
 	public Connection getConnection() {
-		return connection;
+		if (connection!=null)
+			return connection;
+		else
+			return connectionProvider.get();
 	}
 
 	@Override
@@ -168,7 +184,27 @@ public class SQLExecutor extends QueryExecutor {
 		super.init(queryBuilder);
 		execute();
 	}
-
+	/**
+	 * Transforms the ResultSet to the class of type T defined by <code>resultSetProcessor</code>
+	 * e.g.: 
+	 * <pre>
+	 * List<Customer> result = queryBuilder.execute().getResult(new ListSqlResultTransformer<Customer>(){
+	 * 
+     *          public Customer getValueObject(ResultSet rs) throws SQLException {
+     *                  Customer customer = new Customer();
+     *                  customer.setId(rs.getLong("ID"));
+     *                  customer.setFirstName(rs.getString("FIRSTNAME"));
+     *                  customer.setLastName(rs.getString("LASTNAME"));
+     *                  customer.setCity(rs.getString("CITY"));
+     *                  customer.setStreet(rs.getString("STREET"));
+     *                  return customer;
+     *          }});
+	 * 
+	 * </pre>
+	 * @param <T>
+	 * @param resultSetProcessor
+	 * @return
+	 */
 	public <T> T getResult(SqlResultTransformer<T> resultSetProcessor){
 		try {
 			resultSetProcessor.init(resultSet);
@@ -183,7 +219,10 @@ public class SQLExecutor extends QueryExecutor {
 		return resultSetProcessor.getResult();
 	}
 	
-	
+	/**
+	 * Returns a list of maps, find the value of each column by using the column name as a key on the map, 
+	 * if you use an alias in your select the alias will be the key on the map
+	 */
 	@Override
 	public List getResultList() {
 		if	(!(getQueryBuilder() instanceof SqlSelectQueryBuilder))
@@ -195,6 +234,14 @@ public class SQLExecutor extends QueryExecutor {
 		return (List)getResult(new GenericListSqlResultTransformer());
 	}
 	
+	/**
+	 * returns a map where the key is the first column, and the value depends on number of columns in the result set,
+	 *  <ul>
+	 *  <li> if the result has only one column the value is Boolean.TRUE,
+	 *  <li> if it has 2 columns the second column is the value
+	 *  <li> if it has more than 2 columns, the value is a map with the rest of the columns values
+	 *  </ul>
+	 */
 	@Override
 	public Map getResultMap() {
 		if	(!(getQueryBuilder() instanceof SqlSelectQueryBuilder))
@@ -205,6 +252,13 @@ public class SQLExecutor extends QueryExecutor {
 		return (Map)getResult(new GenericMapSqlResultTransformer());
 	}
 
+	/**
+	 * Returns
+	 * <ul>
+	 * <li> if the column count is equal to 1 return the value of the first column of the first row
+	 * <li> if the column count is greater than 1 returns a Map of the first row, with the values of all the columns using the colum names as keys
+	 * </ul>
+	 */
 	@Override
 	public Object getUniqueResult() {
 		if	(!(getQueryBuilder() instanceof SqlSelectQueryBuilder))
@@ -216,6 +270,28 @@ public class SQLExecutor extends QueryExecutor {
 		return getUniqueResult(new GenericValueObjectFromResultSet());
 	}
 	
+	/**
+	 * Transforms the first row of the ResultSet to the type defined in <code>getValueObject</code>
+	 * e.g.:
+	 * <pre>
+	 * Customer customer = queryBuilder.execute().getUniqueResult(new ValueObjectFromResultSet<Customer>() {
+     *      
+	 * 	    public Customer getValueObject(ResultSet rs) throws SQLException {
+	 * 	    	Customer customer = new Customer();
+	 * 	    	customer.setId(rs.getLong("ID"));
+	 * 	    	customer.setFirstName(rs.getString("FIRSTNAME"));
+	 * 	    	customer.setLastName(rs.getString("LASTNAME"));
+	 * 	    	customer.setCity(rs.getString("CITY"));
+	 * 	    	customer.setStreet(rs.getString("STREET"));
+	 * 	    	return customer;
+	 * 	    }
+	 * 	
+	 *	});
+	 * </pre>
+	 * @param <V>
+	 * @param getValueObject
+	 * @return
+	 */
 	public <V> V getUniqueResult(ValueObjectFromResultSet<V> getValueObject) {
 		try {
 			while(resultSet.next()){

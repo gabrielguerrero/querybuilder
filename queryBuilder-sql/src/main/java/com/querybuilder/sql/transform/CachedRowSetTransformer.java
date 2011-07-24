@@ -1,9 +1,10 @@
-package com.querybuilder.sql;
+package com.querybuilder.sql.transform;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
 import javax.sql.rowset.CachedRowSet;
+
 
 public class CachedRowSetTransformer implements SqlResultTransformer<CachedRowSet>{
 

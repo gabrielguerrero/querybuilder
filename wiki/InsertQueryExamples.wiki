@@ -3,9 +3,9 @@
 Here are a few example of insert queries, is similar to other queries
 == Simple Insert ==
 {{{
- SqlInsertQueryBuilder newInsertQueryBuilder = queryFactory.newInsertQueryBuilder();
+ SqlInsertQueryBuilder insertQuery = queryFactory.newInsertQueryBuilder();
  
- newInsertQueryBuilder.insertInto("CustomerBackUp")
+ insertQuery.insertInto("CustomerBackUp")
  .setFieldValue("ID", 55)
  .setFieldValue("FIRSTNAME", "Gabriel")
  .setFieldValue("LASTNAME", "Guerrero")
@@ -13,7 +13,7 @@ Here are a few example of insert queries, is similar to other queries
  
  System.out.println("sql: "+ newInsertQueryBuilder.getBuiltQuery());
  // sql: insert into Customer (ID,FIRSTNAME,LASTNAME) values (:ID,:FIRSTNAME,:LASTNAME) 
- int updateCount = newInsertQueryBuilder.execute().getUpdateCount();
+ int updateCount = insertQuery.execute().getUpdateCount();
 }}}
 
 == Batch Insert == 

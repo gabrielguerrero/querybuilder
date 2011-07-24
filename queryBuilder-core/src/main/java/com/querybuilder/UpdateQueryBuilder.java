@@ -35,6 +35,20 @@ public abstract class UpdateQueryBuilder<E extends UpdateQueryBuilder<?, ?>, T e
 		super(queryExecutor);
 	}
 
+	/**
+	 * Sets the table to be used in the update query
+	 * e.g.:
+	 * <pre>
+	 *  SqlUpdateQueryBuilder updateQuery = queryFactory.newUpdateQueryBuilder();
+     *  updateQuery.update("Customer c")
+     *                  .setFieldValue("FIRSTNAME", "Gabriel")
+     *                  .setFieldValue("LASTNAME", "Guerrero")
+     *                  .where("c.firstName like :name")
+     *                  .setParameter("name", "Andrew");
+     * </pre>                 
+	 * @param table
+	 * @return
+	 */
 	public E update(String table) {
 		queryChanged();
 		this.table = table;
@@ -45,11 +59,21 @@ public abstract class UpdateQueryBuilder<E extends UpdateQueryBuilder<?, ?>, T e
 		return table;
 	}
 	
+	/**
+	 * Returns the conditions collection for the "where" clause, usually needed to add/remove/change a condition of the "where" clause
+	 * e.g.: <pre>query.where().addAnd("p.salary = :salary").addOr("p.startDate >= :startDate")</pre>
+	 * @return
+	 */
 	public ConditionsClause<E> where() {
 		queryChanged();
 		return conditions;
 	}
 
+	/**
+	 * Clears the where conditions collection and adds the arguments, by default the arguments will be join using an "and" condition, to get control if they are "and" or "or" use where()
+	 * @param conditions
+	 * @return queryBuilder
+	 */
 	public E where(String... conditions) {
 		where().clear();
 		for (int i = 0; i < conditions.length; i++) {
@@ -58,6 +82,9 @@ public abstract class UpdateQueryBuilder<E extends UpdateQueryBuilder<?, ?>, T e
 		return where().end();
 	}
 	
+	/**
+	 * Builds the query, after this you can call getBuiltQuery() to check the built query, or execute() to run the query
+	 */
 	@Override
 	public E build() {
 
@@ -116,20 +143,22 @@ public abstract class UpdateQueryBuilder<E extends UpdateQueryBuilder<?, ?>, T e
 	}
 
 
-
+	/**
+	 * Returns the fields collection for the "fields" clause, usually needed to add/remove/change a field of "fields" clause
+	 * eg: <pre>query.fields().remove("id")</pre>
+	 * @return
+	 */
 	public FieldsCollection<E> fields() {
 		queryChanged();
 		return fields;
 	}
-
-//	public E fields(String... fields) {
-//		fields().clear();
-//		for (int i = 0; i < fields.length; i++) {
-//			fields().add(fields[i]);
-//		}
-//		return fields().end();
-//	}
-
+	
+	/**
+	 * Sets the field and the value to the insert statement
+	 * @param name
+	 * @param value
+	 * @return
+	 */
 	public E setFieldValue(String name, Object value){
 		queryChanged();
 		fields().add(name);
@@ -137,6 +166,13 @@ public abstract class UpdateQueryBuilder<E extends UpdateQueryBuilder<?, ?>, T e
 		return (E) this;
 	}
 
+	/**
+	 * Sets the parameter, if the parameter already exists it will be replaced, no error will be thrown if the parameter is not use in the query
+	 * the parameter should appear in the query like :parameterName, they will be replace by ? before the execution
+	 * @param name of the named parameter in the query
+	 * @param value any basic java type (String, Integer, Date, ...etc) or a collection or another SelectQueryBuilder (for subquery)
+	 * @return
+	 */
 	public E setParameter(String name, Object value) {
 		getParameters().add(name, value);
 		return (E) this;

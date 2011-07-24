@@ -34,6 +34,12 @@ public abstract class QueryExecutor {
 
 	public abstract <T> List<T> getResultList();
 
+	/**
+	 * Returns the result as a map
+	 * @param <K> 
+	 * @param <V>
+	 * @return
+	 */
 	public abstract <K,V> Map<K,V> getResultMap();
 
 	public abstract <T> T getUniqueResult();

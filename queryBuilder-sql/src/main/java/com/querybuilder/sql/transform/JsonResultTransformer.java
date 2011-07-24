@@ -1,4 +1,4 @@
-package com.querybuilder.sql;
+package com.querybuilder.sql.transform;
 
 import java.io.IOException;
 import java.io.OutputStream;

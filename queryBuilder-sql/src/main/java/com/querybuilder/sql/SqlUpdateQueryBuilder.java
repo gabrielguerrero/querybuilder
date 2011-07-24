@@ -34,6 +34,10 @@ public class SqlUpdateQueryBuilder extends UpdateQueryBuilder<SqlUpdateQueryBuil
 	public SqlUpdateQueryBuilder(Connection connection) {
 		this(new SQLExecutor(connection));
 	}
+	
+	public SqlUpdateQueryBuilder(ConnectionProvider connectionProvider) {
+		this(new SQLExecutor(connectionProvider));
+	}
 
 	@Override
 	protected SqlUpdateQueryBuilder newQueryBuilder() {

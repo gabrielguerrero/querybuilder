@@ -13,13 +13,31 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-package com.querybuilder.sql;
+package com.querybuilder.sql.transform;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
-public interface ValueObjectFromResultSet<V> {
+public interface SqlResultTransformer<T> {
 
-	public abstract V getValueObject(ResultSet rs) throws SQLException;
-
+	/**
+	 * First method called to process the result, use to initialize the container that will hold the results
+	 * @param rs
+	 * @throws SQLException
+	 */
+	public void init(ResultSet rs) throws SQLException;
+	
+	/**
+	 * This method is executed ones per row in the result, use to process the row and add it to the results container
+	 * @param rs
+	 * @throws SQLException
+	 */
+	public void processRow(ResultSet rs) throws SQLException;
+	
+	/**
+	 * Final method use it to  return the results container 
+	 * @return
+	 */
+	public T getResult();
+	
 }

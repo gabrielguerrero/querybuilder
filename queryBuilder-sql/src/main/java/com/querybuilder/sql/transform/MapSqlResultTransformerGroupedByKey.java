@@ -13,7 +13,7 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-package com.querybuilder.sql;
+package com.querybuilder.sql.transform;
 
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
 
 public abstract class MapSqlResultTransformerGroupedByKey<K,V> implements SqlResultTransformer<Map<K,List<V>>> {
 

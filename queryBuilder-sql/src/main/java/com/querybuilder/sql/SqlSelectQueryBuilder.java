@@ -6,6 +6,7 @@ import java.util.Map;
 import java.util.Set;
 
 import com.querybuilder.SelectQueryBuilder;
+import com.querybuilder.sql.transform.SqlResultTransformer;
 
 /*
  * Copyright (c) 2011 Gabriel Guerrero.
@@ -35,6 +36,10 @@ public class SqlSelectQueryBuilder extends SelectQueryBuilder<SqlSelectQueryBuil
 	
 	public SqlSelectQueryBuilder(Connection connection,SqlLimitHandler limitHandler) {
 		this(new SQLExecutor(connection),limitHandler);
+	}
+	
+	public SqlSelectQueryBuilder(ConnectionProvider connectionProvider,SqlLimitHandler limitHandler) {
+		this(new SQLExecutor(connectionProvider),limitHandler);
 	}
 
 	@Override

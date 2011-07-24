@@ -13,17 +13,26 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-package com.querybuilder.sql;
+package com.querybuilder.sql.transform;
 
+import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
+import java.util.HashMap;
+import java.util.Map;
 
-public interface SqlResultTransformer<T> {
+import com.querybuilder.sql.SQLExecutor;
 
-	public void init(ResultSet rs) throws SQLException;
-	
-	public void processRow(ResultSet rs) throws SQLException;
-	
-	public T getResult();
-	
+@SuppressWarnings("rawtypes")
+public class GenericListSqlResultTransformer extends ListSqlResultTransformer {
+
+	@Override
+	public Object getValueObject(ResultSet rs) throws SQLException {
+		Map object = SQLExecutor.getMapFromResultSet(rs,rs.getMetaData(),1);
+		return object;
+	}
+
+
 }

@@ -34,6 +34,10 @@ public class SqlInsertQueryBuilder extends InsertQueryBuilder<SqlInsertQueryBuil
 	public SqlInsertQueryBuilder(Connection connection) {
 		this(new SQLExecutor(connection));
 	}
+	
+	public SqlInsertQueryBuilder(ConnectionProvider connectionProvider) {
+		this(new SQLExecutor(connectionProvider));
+	}
 
 	@Override
 	protected SqlInsertQueryBuilder newQueryBuilder() {

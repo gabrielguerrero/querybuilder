@@ -31,12 +31,40 @@ public abstract class InsertQueryBuilder<E extends InsertQueryBuilder<?, ?>, T e
 		super(queryExecutor);
 	}
 
+	/**
+	 * Sets the <code>table</code> where the values will be inserted
+	 * e.g.:
+	 * <pre>
+	 * SqlInsertQueryBuilder insertQuery = queryFactory.newInsertQueryBuilder();
+     * 
+     * insertQuery.insertInto("CustomerBackUp")
+     * .setFieldValue("ID", 55)
+     * .setFieldValue("FIRSTNAME", "Gabriel")
+     * .setFieldValue("LASTNAME", "Guerrero")
+     * .build();
+	 * </pre>
+	 * @param table
+	 * @return
+	 */
 	public E insertInto(String table) {
 		queryChanged();
 		this.table = table;
 		return (E) this;
 	}
 	
+	/**
+	 * Sets the query that will be used for a batch insert
+	 * e.g.:
+	 * <pre>
+	 * selectQuery.select("c.id, c.firstName, c.lastName").from("Customer c");
+     * 
+     * insertQuery.insertInto("Customer").fields("ID","FIRSTNAME","LASTNAME").setValuesFrom(selectQuery);
+     * 
+     * insertQuery.build();
+	 * </pre>
+	 * @param valuesFrom
+	 * @return
+	 */
 	public E setValuesFrom(SelectQueryBuilder valuesFrom){
 		queryChanged();
 		this.valuesFrom = valuesFrom;
@@ -46,6 +74,9 @@ public abstract class InsertQueryBuilder<E extends InsertQueryBuilder<?, ?>, T e
 	public String getInsertTable() {
 		return table;
 	}
+	/**
+	 * Builds the query, after this you can call getBuiltQuery() to check the built query, or execute() to run the query
+	 */
 	@Override
 	public E build() {
 
@@ -85,12 +116,29 @@ public abstract class InsertQueryBuilder<E extends InsertQueryBuilder<?, ?>, T e
 	}
 
 
-
+	/**
+	 * Returns the fields collection for the "fields" clause, usually needed to add/remove/change a field of "fields" clause
+	 * eg: <pre>query.fields().remove("id")</pre>
+	 * @return
+	 */
 	public FieldsCollection<E> fields() {
 		queryChanged();
 		return fields;
 	}
 
+	/**
+	 * Clears the select fields collection and adds each of the arguments, this is mainly used for batch inserts
+	 * e.g.:
+	 * <pre>
+	 * selectQuery.select("c.id, c.firstName, c.lastName").from("Customer c");
+     * 
+     * insertQuery.insertInto("Customer").fields("ID","FIRSTNAME","LASTNAME").setValuesFrom(selectQuery);
+     * 
+     * insertQuery.build();
+	 * </pre>
+	 * @param fields
+	 * @return the queryBuilder, useful for method chaining
+	 */
 	public E fields(String... fields) {
 		fields().clear();
 		for (int i = 0; i < fields.length; i++) {
@@ -99,12 +147,25 @@ public abstract class InsertQueryBuilder<E extends InsertQueryBuilder<?, ?>, T e
 		return fields().end();
 	}
 
+	/**
+	 * Sets the field and the value to the insert statement
+	 * @param name
+	 * @param value
+	 * @return
+	 */
 	public E setFieldValue(String name, Object value){
 		fields().add(name);
 		setParameter(name, value);
 		return (E) this;
 	}
 
+	/**
+	 * Sets the parameter, if the parameter already exists it will be replaced, no error will be thrown if the parameter is not use in the query
+	 * the parameter should appear in the query like :parameterName, they will be replace by ? before the execution
+	 * @param name of the named parameter in the query
+	 * @param value any basic java type (String, Integer, Date, ...etc) or a collection or another SelectQueryBuilder (for subquery)
+	 * @return
+	 */
 	public E setParameter(String name, Object value) {
 		getParameters().add(name, value);
 		return (E) this;

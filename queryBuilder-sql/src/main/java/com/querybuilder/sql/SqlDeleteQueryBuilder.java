@@ -34,6 +34,10 @@ public class SqlDeleteQueryBuilder extends DeleteQueryBuilder<SqlDeleteQueryBuil
 	public SqlDeleteQueryBuilder(Connection connection) {
 		this(new SQLExecutor(connection));
 	}
+	
+	public SqlDeleteQueryBuilder(ConnectionProvider connectionProvider) {
+		this(new SQLExecutor(connectionProvider));
+	}
 
 	@Override
 	protected SqlDeleteQueryBuilder newQueryBuilder() {

@@ -1,10 +1,11 @@
-package com.querybuilder.sql;
+package com.querybuilder.sql.transform;
 
 import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
+
 
 public class CvsResultTransfomer implements SqlResultTransformer<Object>{
 

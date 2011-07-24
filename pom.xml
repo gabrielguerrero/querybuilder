@@ -21,7 +21,7 @@
 	<groupId>com.querybuilder</groupId>
 	<artifactId>querybuilder</artifactId>
 	<name>Query Builder</name>
-	<version>1.4</version>
+	<version>1.5-SNAPSHOT</version>
 	<packaging>pom</packaging>
 
 	<build>

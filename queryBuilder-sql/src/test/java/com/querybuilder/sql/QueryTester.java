@@ -54,6 +54,14 @@ import org.junit.Before;
 import org.junit.Test;
 
 import com.querybuilder.QueryBuilderException;
+import com.querybuilder.sql.transform.CachedRowSetTransformer;
+import com.querybuilder.sql.transform.CvsResultTransfomer;
+import com.querybuilder.sql.transform.JsonResultTransformer;
+import com.querybuilder.sql.transform.ListSqlResultTransformer;
+import com.querybuilder.sql.transform.MapSqlResultTransformer;
+import com.querybuilder.sql.transform.MapSqlResultTransformerGroupedByKey;
+import com.querybuilder.sql.transform.SqlResultTransformer;
+import com.querybuilder.sql.transform.ValueObjectFromResultSet;
 import com.querybuilder.test.CustomerProto;
 import com.querybuilder.test.CustomerProto.CustomerList;
 
@@ -650,13 +658,13 @@ public class QueryTester extends DBTestBase{
 		SqlSelectQueryBuilder queryBuilder = queryFactory.newSelectQueryBuilder();
 		Integer count = (Integer) queryBuilder.select("count(*)").from("Customer c").execute().getUniqueResult();
 		
-		SqlInsertQueryBuilder newInsertQueryBuilder = queryFactory.newInsertQueryBuilder();
-		newInsertQueryBuilder.insertInto("Customer")
+		SqlInsertQueryBuilder insertQuery = queryFactory.newInsertQueryBuilder();
+		insertQuery.insertInto("Customer")
 		.setFieldValue("ID", 55)
 		.setFieldValue("FIRSTNAME", "Gab")
 		.setFieldValue("LASTNAME", "Gue").build();
-		System.out.println("sql "+ newInsertQueryBuilder.getBuiltQuery());
-		int updateCount = newInsertQueryBuilder.execute().getUpdateCount();
+		System.out.println("sql "+ insertQuery.getBuiltQuery());
+		int updateCount = insertQuery.execute().getUpdateCount();
 		
 		assertEquals(1,updateCount);
 		
@@ -676,11 +684,12 @@ public class QueryTester extends DBTestBase{
 		SqlSelectQueryBuilder queryBuilder = queryFactory.newSelectQueryBuilder();
 		Integer count = (Integer) queryBuilder.select("count(*)").from("Customer c").execute().getUniqueResult();
 		
-		SqlInsertQueryBuilder insertQueryBuilder = queryFactory.newInsertQueryBuilder().insertInto("Customer").fields("ID","FIRSTNAME","LASTNAME")
+		SqlInsertQueryBuilder insertQuery = queryFactory.newInsertQueryBuilder();
+		insertQuery.insertInto("Customer").fields("ID","FIRSTNAME","LASTNAME")
 												.setValuesFrom(queryBuilder.select("c.id+500,c.firstName,c.lastName"));
-		insertQueryBuilder.build();
-		System.out.println("sql "+ insertQueryBuilder.getBuiltQuery());
-		int updateCount = insertQueryBuilder.execute().getUpdateCount();
+		insertQuery.build();
+		System.out.println("sql "+ insertQuery.getBuiltQuery());
+		int updateCount = insertQuery.execute().getUpdateCount();
 		
 		assertThat(updateCount, equalTo(count));
 		Integer count2 = (Integer) queryBuilder.select("count(*)").build().execute().getUniqueResult();
@@ -694,10 +703,10 @@ public class QueryTester extends DBTestBase{
 		
 		SqlUpdateQueryBuilder updateQuery = queryFactory.newUpdateQueryBuilder();
 		updateQuery.update("Customer c")
-							 .setFieldValue("FIRSTNAME", "Gabriel")
-							 .setFieldValue("LASTNAME", "Guerrero")
-							 .where("c.firstName like :name")
-							 .setParameter("name", "Andrew");
+					.setFieldValue("FIRSTNAME", "Gabriel")
+					.setFieldValue("LASTNAME", "Guerrero")
+					.where("c.firstName like :name")
+					.setParameter("name", "Andrew");
 		updateQuery.build();
 		System.out.println("sql: "+ updateQuery.getBuiltQuery());
 		

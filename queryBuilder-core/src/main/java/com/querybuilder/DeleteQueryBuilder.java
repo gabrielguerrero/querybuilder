@@ -30,6 +30,16 @@ public abstract class DeleteQueryBuilder<E extends DeleteQueryBuilder<?, ?>, T e
 		super(queryExecutor);
 	}
 
+	/**
+	 * Sets the table that will be deleted
+	 * e.g.:
+	 * <pre>
+	 *  SqlDeleteQueryBuilder deleteQuery = queryFactory.newDeleteQueryBuilder();
+ 	 *  deleteQuery.deleteFrom("Customer c").where("c.id = :id").setParameter("id", 123).build();
+	 * </pre>
+	 * @param table
+	 * @return
+	 */
 	public E deleteFrom(String table) {
 		queryChanged();
 		this.table = table;
@@ -39,12 +49,21 @@ public abstract class DeleteQueryBuilder<E extends DeleteQueryBuilder<?, ?>, T e
 	public String getDeleteTable() {
 		return table;
 	}
-	
+	/**
+	 * Returns the conditions collection for the "where" clause, usually needed to add/remove/change a condition of the "where" clause
+	 * e.g.: <pre>query.where().addAnd("p.salary = :salary").addOr("p.startDate >= :startDate")</pre>
+	 * @return
+	 */
 	public ConditionsClause<E> where() {
 		queryChanged();
 		return conditions;
 	}
 
+	/**
+	 * Clears the where conditions collection and adds the arguments, by default the arguments will be join using an "and" condition, to get control if they are "and" or "or" use where()
+	 * @param conditions
+	 * @return queryBuilder
+	 */
 	public E where(String... conditions) {
 		where().clear();
 		for (int i = 0; i < conditions.length; i++) {
@@ -53,6 +72,9 @@ public abstract class DeleteQueryBuilder<E extends DeleteQueryBuilder<?, ?>, T e
 		return where().end();
 	}
 	
+	/**
+	 * Builds the query, after this you can call getBuiltQuery() to check the built query, or execute() to run the query
+	 */
 	@Override
 	public E build() {
 
@@ -87,6 +109,13 @@ public abstract class DeleteQueryBuilder<E extends DeleteQueryBuilder<?, ?>, T e
 		return (E) this;
 	}
 
+	/**
+	 * Sets the parameter, if the parameter already exists it will be replaced, no error will be thrown if the parameter is not use in the query
+	 * the parameter should appear in the query like :parameterName, they will be replace by ? before the execution
+	 * @param name of the named parameter in the query
+	 * @param value any basic java type (String, Integer, Date, ...etc) or a collection or another SelectQueryBuilder (for subquery)
+	 * @return
+	 */
 	public E setParameter(String name, Object value) {
 		getParameters().add(name, value);
 		return (E) this;

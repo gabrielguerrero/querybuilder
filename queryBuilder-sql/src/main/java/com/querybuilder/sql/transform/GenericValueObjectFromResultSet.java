@@ -13,28 +13,23 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-package com.querybuilder.sql;
+package com.querybuilder.sql.transform;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.HashMap;
 import java.util.Map;
 
- class GenericMapSqlResultTransformer extends MapSqlResultTransformer{
+import com.querybuilder.sql.SQLExecutor;
 
-	public GenericMapSqlResultTransformer() {
-		super(1000);
-	}
+@SuppressWarnings("rawtypes")
+public class GenericValueObjectFromResultSet implements ValueObjectFromResultSet{
 
-	@Override
 	public Object getValueObject(ResultSet rs) throws SQLException {
-		int cols = getColumnCount();
+		int cols = rs.getMetaData().getColumnCount();
 		if (cols == 1) {
-			return Boolean.TRUE;
-		} else if (cols == 2) {
-			Object value = rs.getObject(2);
+			Object value = rs.getObject(1);
 			if (value instanceof BigInteger)
 				value = Long.valueOf(((BigInteger) value).intValue() + "");
 			else if (value instanceof BigDecimal)
@@ -42,22 +37,9 @@ import java.util.Map;
 						+ "");
 			return value;
 		} else {
-			Map object = SQLExecutor.getMapFromResultSet(rs,rs.getMetaData(),2);
-			return object;
+			Map mapFromResultSet = SQLExecutor.getMapFromResultSet(rs, rs.getMetaData(), 1);
+			return mapFromResultSet;
 		}
-	}
-
-	@Override
-	public Object getIdObject(ResultSet rs) throws SQLException {
-		int cols = getColumnCount();
-			Object key = rs.getObject(1);
-			if (key instanceof BigInteger)
-				key = Long.valueOf(((BigInteger) key).intValue() + "");
-			else if (key instanceof BigDecimal)
-				key = Float.valueOf(((BigDecimal) key).floatValue() + "");
-			else if (key instanceof Number)
-				key = Long.valueOf(((Number) key).longValue() + "");
-		return key;
 	}
 
 }

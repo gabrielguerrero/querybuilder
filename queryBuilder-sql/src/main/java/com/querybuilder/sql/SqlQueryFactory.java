@@ -31,18 +31,18 @@ public class SqlQueryFactory {
 	}
 	
 	public SqlSelectQueryBuilder newSelectQueryBuilder(){
-		return new SqlSelectQueryBuilder(new SQLExecutor(connectionProvider.get()), limitHandler);
+		return new SqlSelectQueryBuilder(connectionProvider, limitHandler);
 	}
 	
 	public SqlInsertQueryBuilder newInsertQueryBuilder(){
-		return new SqlInsertQueryBuilder(new SQLExecutor(connectionProvider.get()));
+		return new SqlInsertQueryBuilder(connectionProvider);
 	}
 	
 	public SqlUpdateQueryBuilder newUpdateQueryBuilder(){
-		return new SqlUpdateQueryBuilder(new SQLExecutor(connectionProvider.get()));
+		return new SqlUpdateQueryBuilder(connectionProvider);
 	}
 	
 	public SqlDeleteQueryBuilder newDeleteQueryBuilder(){
-		return new SqlDeleteQueryBuilder(new SQLExecutor(connectionProvider.get()));
+		return new SqlDeleteQueryBuilder(connectionProvider);
 	}
 }

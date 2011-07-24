@@ -25,6 +25,10 @@ public abstract class QueryBuilder<E extends QueryBuilder<?,?>, T extends QueryE
 		this.queryExecutor = queryExecutor;
 	}
 
+	/**
+	 * executes the query
+	 * @return
+	 */
 	public T execute() {
 		if (getBuiltQuery()==null){
 			build();
@@ -37,6 +41,10 @@ public abstract class QueryBuilder<E extends QueryBuilder<?,?>, T extends QueryE
 		return (E) this;
 	}
 
+	/**
+	 * returns the build query as a string
+	 * @return
+	 */
 	public String getBuiltQuery() {
 		return query;
 	}

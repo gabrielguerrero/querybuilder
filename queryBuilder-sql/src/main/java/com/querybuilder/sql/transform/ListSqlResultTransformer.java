@@ -13,13 +13,14 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-package com.querybuilder.sql;
+package com.querybuilder.sql.transform;
 
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
+
 
 public abstract class ListSqlResultTransformer<T> implements SqlResultTransformer<List<T>>,ValueObjectFromResultSet<T>{
 
