@@ -1,0 +1,14 @@
+package querybuilder;
+
+option java_package = "com.querybuilder.test";
+option java_outer_classname = "CustomerProto";
+
+message Customer {
+  optional int64 id = 1;
+  optional string firstName = 2;
+  optional string lastName = 3;
+  optional string street = 4;
+}
+message CustomerList {
+  repeated Customer customers = 1;
+} 

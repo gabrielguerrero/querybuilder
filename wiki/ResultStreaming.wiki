@@ -1,0 +1,65 @@
+= Result Streaming =
+The idea here is to write every row of the result set directly to a disk or to a db or a servlet output stream instead of a collection or any kind of java container, so you can process millions of rows without been worry of memory
+
+For example
+Lets transform the result directly to CVS file
+
+The library has CVS transformer already that you can use like
+{{{
+ SqlSelectQueryBuilder queryBuilder = queryFactory.newSelectQueryBuilder();
+ queryBuilder.select("*").from("Customer");
+ queryBuilder.build();
+ System.out.println(queryBuilder.getBuiltQuery());
+ 
+ FileOutputStream fileOutputStream = new FileOutputStream(new File("target//temp2.cvs"));
+ queryBuilder.execute().getResult(new CvsResultTransfomer(fileOutputStream));
+ fileOutputStream.flush();
+ fileOutputStream.close();
+}}}
+
+If you want to create a custom one it will be something like the following
+
+{{{
+ SqlSelectQueryBuilder queryBuilder = queryFactory.newSelectQueryBuilder();
+ queryBuilder.select("*").from("Customer");
+ queryBuilder.build();
+ System.out.println(queryBuilder.getBuiltQuery());
+ final FileOutputStream fileOutputStream = new FileOutputStream(new File("target//temp.cvs"));
+ queryBuilder.execute().getResult(new SqlResultTransformer<Object>() {
+            
+            private PrintWriter writer;
+
+            public void init(ResultSet rs) throws SQLException {
+                writer = new PrintWriter(fileOutputStream); 
+                writer.write("ID");
+                writer.write(',');
+                writer.write("FIRSTNAME");
+                writer.write(',');
+                writer.write("LASTNAME");
+                writer.write(',');
+                writer.write("CITY");
+                writer.write(',');
+                writer.write("STREET");
+                writer.write('\n');
+            }
+            
+            public void processRow(ResultSet rs) throws SQLException {
+                writer.write(rs.getString("ID"));
+                writer.write(',');
+                writer.write(rs.getString("FIRSTNAME"));
+                writer.write(',');
+                writer.write(rs.getString("LASTNAME"));
+                writer.write(',');
+                writer.write(rs.getString("CITY"));
+                writer.write(',');
+                writer.write(rs.getString("STREET"));
+                writer.write('\n');
+            }
+            
+            public Object getResult() {
+                writer.flush();
+                return null;
+            }
+        });
+ fileOutputStream.close();
+}}}

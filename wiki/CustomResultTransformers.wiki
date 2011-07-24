@@ -1,0 +1,34 @@
+=Custom Result Transformers=
+To implement a custom result transformer you just need to call queryBuilder.getResult with an implementation of SqlResultTransformer,
+the init(ResultSet result) method is called first then per each row processRow(ResultSet rs) is called, and finally at the end getResult(),
+you don't need to implement all the methods specially for cases like streamimg you could do all the logic in the init() to handle non SqlExceptions and ensure resources are close using finally (see [JsonResults Json Results])
+
+For example:
+{{{
+ SqlSelectQueryBuilder queryBuilder = queryFactory.newSelectQueryBuilder();
+         queryBuilder.select("*").from("Customer");
+         queryBuilder.build();
+         System.out.println(queryBuilder.getBuiltQuery());
+         List<Customer> result = queryBuilder.execute().getResult(new SqlResultTransformer<List<Customer>>() {
+ 
+             List<Customer> list = new ArrayList<Customer>();
+             public void init(ResultSet result) throws SQLException {
+             }
+ 
+             public void processRow(ResultSet rs) throws SQLException {
+                 Customer customer = new Customer();
+                 list.add(customer);
+                 customer.setId(rs.getLong("ID"));
+                 customer.setFirstName(rs.getString("FIRSTNAME"));
+                 customer.setLastName(rs.getString("LASTNAME"));
+                 customer.setCity(rs.getString("CITY"));
+                 customer.setStreet(rs.getString("STREET"));
+             }
+ 
+             public List<Customer> getResult() {
+                 return list;
+             }
+         });
+}}}
+
+To see more complex cases see : [ResultStreaming Result Streaming], [JsonResults Json Results], [ProtobufResults Protobuf Results]
