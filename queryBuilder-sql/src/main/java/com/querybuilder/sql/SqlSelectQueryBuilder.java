@@ -1,9 +1,6 @@
 package com.querybuilder.sql;
 
 import java.sql.Connection;
-import java.util.Collection;
-import java.util.Map;
-import java.util.Set;
 
 import com.querybuilder.SelectQueryBuilder;
 import com.querybuilder.sql.transform.SqlResultTransformer;
@@ -23,9 +20,9 @@ import com.querybuilder.sql.transform.SqlResultTransformer;
  * License for the specific language governing permissions and limitations under
  * the License.
  */
+@SuppressWarnings({ "rawtypes"})
 public class SqlSelectQueryBuilder extends SelectQueryBuilder<SqlSelectQueryBuilder, SQLExecutor> {
 
-	@SuppressWarnings("rawtypes")
 	private SqlResultTransformer resultTransformer;
 	private SqlLimitHandler limitHandler;
 	
@@ -52,7 +49,6 @@ public class SqlSelectQueryBuilder extends SelectQueryBuilder<SqlSelectQueryBuil
 		return this;
 	}
 	
-	@SuppressWarnings("rawtypes")
 	public SqlResultTransformer getResultTransformer() {
 		return resultTransformer;
 	}
@@ -65,7 +61,6 @@ public class SqlSelectQueryBuilder extends SelectQueryBuilder<SqlSelectQueryBuil
 	}
 	
 	@Override
-	@SuppressWarnings({ "rawtypes", "unchecked" })
 	public SqlSelectQueryBuilder build() {
 		super.build();
 		String sql = getBuiltQuery();

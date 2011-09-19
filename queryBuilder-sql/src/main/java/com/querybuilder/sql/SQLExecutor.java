@@ -141,6 +141,7 @@ public class SQLExecutor extends QueryExecutor {
 	public void close() {
 		closeResultSet();
 		closeStatement();
+		closeConnection();
 	}
 
 
@@ -161,6 +162,17 @@ public class SQLExecutor extends QueryExecutor {
 			if (statement != null){
 				statement.close();
 				statement = null;
+			}	
+		} catch (SQLException e) {
+			throw new QueryBuilderException("Error closing statement", e);
+		}
+	}
+	
+	private void closeConnection() {
+		try {
+			if (connection != null){
+				connection.close();
+				connection = null;
 			}	
 		} catch (SQLException e) {
 			throw new QueryBuilderException("Error closing statement", e);
