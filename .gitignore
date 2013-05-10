@@ -6,3 +6,8 @@ queryBuilder-hql/.classpath
 queryBuilder-hql/.project
 queryBuilder-sql/.classpath
 queryBuilder-sql/.project
+/target
+/.*
+.settings/
+*/.settings/
+!/.gitignore
