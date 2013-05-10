@@ -179,6 +179,16 @@ public class SQLExecutor extends QueryExecutor {
 		}
 	}
 	
+	public boolean isInTransaction() {
+		try{
+		if(connection != null)
+			return !connection.getAutoCommit();
+		}catch(SQLException e){
+			throw new QueryBuilderException("Error closing statement", e);
+		}
+		return false;
+	}
+	
 	public Connection getConnection() {
 		if (connection!=null)
 			return connection;

@@ -1,0 +1,8 @@
+.project
+.classpath
+queryBuilder-core/.classpath
+queryBuilder-core/.project
+queryBuilder-hql/.classpath
+queryBuilder-hql/.project
+queryBuilder-sql/.classpath
+queryBuilder-sql/.project
